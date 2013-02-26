@@ -234,13 +234,13 @@ class TapProgressIndicator(SimpleProgressIndicator):
     self._done += 1
     command = basename(output.command[1])
     if output.UnexpectedOutput():
-      print 'not ok %i - %s' % (self._done, command)
+      print 'not ok %i %s' % (self._done, command)
       for l in output.output.stderr.split(os.linesep):
         print '#' + l
       for l in output.output.stdout.split(os.linesep):
         print '#' + l
     else:
-      print 'ok %i - %s' % (self._done, command)
+      print 'ok %i %s' % (self._done, command)
 
   def Done(self):
     pass
