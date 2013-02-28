@@ -36,6 +36,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <EnableProjectHarvesting>True</EnableProjectHarvesting>
+    <RunWixToolsOutOfProc>True</RunWixToolsOutOfProc>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="product.wxs" />
