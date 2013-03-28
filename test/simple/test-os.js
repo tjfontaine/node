@@ -30,7 +30,9 @@ var os = require('os');
 process.env.TMPDIR = '/tmpdir';
 process.env.TMP = '/tmp';
 process.env.TEMP = '/temp';
-var t = ( process.platform === 'win32' ? 'c:\\windows\\temp' : '/tmp' );
+var t = '/tmp';
+if (process.platform === 'win32')
+  t = (process.env.SystemRoot || process.env.windir) + "\\temp";
 assert.equal(os.tmpdir(), '/tmpdir');
 process.env.TMPDIR = '';
 assert.equal(os.tmpdir(), '/tmp');
