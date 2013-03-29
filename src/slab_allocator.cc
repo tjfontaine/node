@@ -27,6 +27,10 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#ifdef HAVE_DTRACE
+#include "node_dtrace.h"
+#include "node_provider.h"
+#endif
 
 using v8::Handle;
 using v8::HandleScope;
@@ -75,6 +79,7 @@ static Local<Object> NewSlab(unsigned int size) {
   Local<Object> buf = Buffer::constructor_template
                       ->GetFunction()
                       ->NewInstance(1, &arg);
+  NODE_SLAB_ALLOC(size);
   return scope.Close(buf);
 }
 
@@ -123,6 +128,7 @@ Local<Object> SlabAllocator::Shrink(Handle<Object> obj,
     last_ptr_ = NULL;
     offset_ = ptr - Buffer::Data(slab) + ROUND_UP(size, 16);
   }
+  NODE_SLAB_SHRINK(size);
   return scope.Close(slab);
 }
 

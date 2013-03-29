@@ -77,6 +77,10 @@ provider node {
 	    int p, int fd) : (node_connection_t *c, string a, int p, int fd);
 	probe gc__start(int t, int f);
 	probe gc__done(int t, int f);
+	probe buffer__alloc(int l) : (int l);
+	probe slow__buffer__alloc(int l) : (int l);
+	probe slab__alloc(int l) : (int l);
+	probe slab__shrink(int l) : (int l);
 };
 
 #pragma D attributes Evolving/Evolving/ISA provider node provider

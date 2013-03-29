@@ -30,6 +30,11 @@
 #include <string.h> // memcpy
 #include <limits.h>
 
+#ifdef HAVE_DTRACE
+#include "node_dtrace.h"
+#include "node_provider.h"
+#endif
+
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 
 #define BUFFER_CLASS_ID (0xBABE)
@@ -218,6 +223,7 @@ void Buffer::Replace(char *data, size_t length,
   if (callback_) {
     data_ = data;
   } else if (length_) {
+    NODE_SLOW_BUFFER_ALLOC(length_);
     data_ = new char[length_];
     if (data)
       memcpy(data_, data, length_);
@@ -989,6 +995,8 @@ Handle<Value> Buffer::MakeFastBuffer(const Arguments &args) {
   if (offset + length < offset) {
     return ThrowRangeError("offset or length out of range");
   }
+
+  NODE_BUFFER_ALLOC(length);
 
   fast_buffer->SetIndexedPropertiesToExternalArrayData(buffer->data_ + offset,
                                                        kExternalUnsignedByteArray,

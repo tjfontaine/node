@@ -55,6 +55,10 @@
 #define NODE_NET_SOCKET_WRITE_ENABLED() (0)
 #define NODE_GC_START(arg0, arg1)
 #define NODE_GC_DONE(arg0, arg1)
+#define NODE_BUFFER_ALLOC(arg0)
+#define NODE_SLOW_BUFFER_ALLOC(arg0)
+#define NODE_SLAB_ALLOC(arg0)
+#define NODE_SLAB_SHRINK(arg0)
 #endif
 
 namespace node {
@@ -310,6 +314,17 @@ Handle<Value> DTRACE_HTTP_CLIENT_RESPONSE(const Arguments& args) {
 
   return Undefined(node_isolate);
 }
+
+/*
+Handle<Value> DTRACE_BUFFER_ALLOC(const Arguments& args) {
+  HandleScope scope(node_isolate);
+
+  int len = args[0]->Int32Value();
+  NODE_BUFFER_ALLOC(len);
+
+  return Undefined(node_isolate);
+}
+*/
 
 #define NODE_PROBE(name) #name, name, Persistent<FunctionTemplate>()
 
