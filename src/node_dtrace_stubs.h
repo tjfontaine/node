@@ -19,6 +19,8 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+#ifndef NODE_DTRACE_STUBS_H
+#define NODE_DTRACE_STUBS_H
 
 #ifdef HAVE_DTRACE
 #include "node_dtrace.h"
@@ -55,7 +57,12 @@
 #define NODE_NET_SOCKET_WRITE_ENABLED() (0)
 #define NODE_GC_START(arg0, arg1)
 #define NODE_GC_DONE(arg0, arg1)
-#define NODE_BUFFER_ALLOC(arg0)
-#define NODE_SLOW_BUFFER_ALLOC(arg0)
-#define NODE_SLAB_ALLOC(arg0)
+#define NODE_BUFFER_ALLOC(arg0, arg1)
+#define NODE_BUFFER_FREE(arg0, arg1)
+#endif
+
+#define NODE_BTYPE_SLAB 1
+#define NODE_BTYPE_FAST 2
+#define NODE_BTYPE_SLOW 3
+
 #endif

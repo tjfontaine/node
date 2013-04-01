@@ -206,8 +206,10 @@ void Buffer::Replace(char *data, size_t length,
   HandleScope scope(node_isolate);
 
   if (callback_) {
+    NODE_BUFFER_FREE(NODE_BTYPE_SLOW, length_);
     callback_(data_, callback_hint_);
   } else if (length_) {
+    NODE_BUFFER_FREE(NODE_BTYPE_SLOW, length_);
     delete [] data_;
     node_isolate->AdjustAmountOfExternalAllocatedMemory(
         -static_cast<intptr_t>(sizeof(Buffer) + length_));
@@ -220,7 +222,7 @@ void Buffer::Replace(char *data, size_t length,
   if (callback_) {
     data_ = data;
   } else if (length_) {
-    NODE_SLOW_BUFFER_ALLOC(length_);
+    NODE_BUFFER_ALLOC(NODE_BTYPE_SLOW, length_);
     data_ = new char[length_];
     if (data)
       memcpy(data_, data, length_);
@@ -993,7 +995,7 @@ Handle<Value> Buffer::MakeFastBuffer(const Arguments &args) {
     return ThrowRangeError("offset or length out of range");
   }
 
-  NODE_BUFFER_ALLOC(length);
+  NODE_BUFFER_ALLOC(NODE_BTYPE_FAST, length);
 
   fast_buffer->SetIndexedPropertiesToExternalArrayData(buffer->data_ + offset,
                                                        kExternalUnsignedByteArray,

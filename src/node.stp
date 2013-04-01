@@ -153,3 +153,29 @@ probe node_gc_stop = process("node").mark("gc__stop")
     type,
     flags);
 }
+
+probe node_buffer_alloc = process("node").mark("buffer__alloc")
+{
+  if ($arg1 == 1)
+    type = "Slab"
+  else if ($arg1 == 2)
+    type = "Buffer"
+  else if ($arg1 == 3)
+    type = "SlowBuffer"
+
+  size = $arg2;
+  probestr = sprintf("%s(type=%s, size=%d)", $$name, type, size);
+}
+
+probe node_buffer_free = process("node").mark("buffer__free")
+{
+  if ($arg1 == 1)
+    type = "Slab"
+  else if ($arg1 == 2)
+    type = "Buffer"
+  else if ($arg1 == 3)
+    type = "SlowBuffer"
+
+  size = $arg2;
+  probestr = sprintf("%s(type=%s, size=%d)", $$name, type, size);
+}
