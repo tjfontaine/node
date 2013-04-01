@@ -30,10 +30,7 @@
 #include <string.h> // memcpy
 #include <limits.h>
 
-#ifdef HAVE_DTRACE
-#include "node_dtrace.h"
-#include "node_provider.h"
-#endif
+#include "node_dtrace_stubs.h"
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 

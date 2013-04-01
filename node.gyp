@@ -129,6 +129,8 @@
         'src/stream_wrap.h',
         'src/tree.h',
         'src/v8_typed_array.h',
+        'src/node_dtrace.h',
+        'src/node_dtrace_stubs.h',
         'deps/http_parser/http_parser.h',
         '<(SHARED_INTERMEDIATE_DIR)/node_natives.h',
         # javascript files to make for an even more pleasant IDE experience

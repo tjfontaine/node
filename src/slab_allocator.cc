@@ -27,10 +27,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#ifdef HAVE_DTRACE
-#include "node_dtrace.h"
-#include "node_provider.h"
-#endif
+#include "node_dtrace_stubs.h"
 
 using v8::Handle;
 using v8::HandleScope;
