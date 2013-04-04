@@ -1,4 +1,8 @@
 {
+  'variables': {
+    'uv_use_dtrace%': 'false',
+  },
+
   'target_defaults': {
     'conditions': [
       ['OS != "win"', {
@@ -248,7 +252,12 @@
         }],
         ['library=="shared_library"', {
           'defines': [ 'BUILDING_UV_SHARED=1' ]
-        }]
+        }],
+        ['uv_use_dtrace=="true"', {
+          'defines': [ 'HAVE_DTRACE=1' ],
+          'dependencies': [ 'uv_dtrace_header' ],
+          'include_dirs': [ '<(SHARED_INTERMEDIATE_DIR)' ],
+        }],
       ]
     },
 
@@ -426,6 +435,48 @@
           'SubSystem': 1, # /subsystem:console
         },
       },
-    }
+    },
+
+    {
+      'target_name': 'uv_dtrace_header',
+      'type': 'none',
+      'conditions': [
+        [ 'uv_use_dtrace=="true"', {
+          'actions': [
+            {
+              'action_name': 'uv_dtrace_header',
+              'inputs': [ 'src/unix/uv_dtrace.d' ],
+              'outputs': [ '<(SHARED_INTERMEDIATE_DIR)/uv_dtrace.h' ],
+              'action': [ 'dtrace', '-h', '-xnolibs', '-s', '<@(_inputs)',
+                '-o', '<@(_outputs)' ],
+            },
+          ],
+        }],
+      ],
+    },
+
+    {
+      'target_name': 'uv_dtrace_provider',
+      'type': 'none',
+      'conditions': [
+        [ 'uv_use_dtrace=="true" and OS!="mac"', {
+          'actions': [
+            {
+              'action_name': 'uv_dtrace_o',
+              'inputs': [
+                'src/unix/uv_dtrace.d',
+                '<(PRODUCT_DIR)/obj.target/libuv/src/unix/core.o'
+              ],
+              'outputs': [
+                '<(PRODUCT_DIR)/obj.target/libuv/src/unix/core.o'
+              ],
+              'action': [ 'dtrace', '-G', '-xnolibs', '-s', '<@(_inputs)',
+                '-o', '<@(_outputs)' ]
+            }
+          ]
+        } ]
+      ]
+    },
+
   ]
 }

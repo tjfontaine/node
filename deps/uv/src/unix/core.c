@@ -60,6 +60,13 @@
 # include <sys/wait.h>
 #endif
 
+#ifdef HAVE_DTRACE
+#include "uv_dtrace.h"
+#else
+#define UV_TICK_START(arg0, arg1)
+#define UV_TICK_STOP(arg0, arg1)
+#endif
+
 static void uv__run_pending(uv_loop_t* loop);
 
 static uv_loop_t default_loop_struct;
@@ -299,6 +306,8 @@ int uv_run(uv_loop_t* loop, uv_run_mode mode) {
 
   r = uv__loop_alive(loop);
   while (r != 0 && loop->stop_flag == 0) {
+    UV_TICK_START(loop, mode);
+
     uv__update_time(loop);
     uv__run_timers(loop);
     uv__run_idle(loop);
@@ -313,6 +322,8 @@ int uv_run(uv_loop_t* loop, uv_run_mode mode) {
     uv__run_check(loop);
     uv__run_closing_handles(loop);
     r = uv__loop_alive(loop);
+
+    UV_TICK_STOP(loop, mode);
 
     if (mode & (UV_RUN_ONCE | UV_RUN_NOWAIT))
       break;
