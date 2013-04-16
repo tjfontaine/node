@@ -82,7 +82,8 @@ using namespace v8;
   } \
   node_dtrace_connection_t conn; \
   Local<Object> _##conn = Local<Object>::Cast(arg); \
-  SLURP_INT(_##conn, fd, &conn.fd); \
+  Local<Object> _handle = (_##conn)->Get(String::New("_handle"))->ToObject(); \
+  SLURP_INT(_handle, fd, &conn.fd); \
   SLURP_STRING(_##conn, remoteAddress, &conn.remote); \
   SLURP_INT(_##conn, remotePort, &conn.port); \
   SLURP_INT(_##conn, bufferSize, &conn.buffered);
