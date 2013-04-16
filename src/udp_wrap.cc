@@ -95,6 +95,15 @@ void UDPWrap::Initialize(Handle<Object> target) {
   t->InstanceTemplate()->SetInternalFieldCount(1);
   t->SetClassName(String::NewSymbol("UDP"));
 
+  enum PropertyAttribute attributes =
+      static_cast<PropertyAttribute>(v8::ReadOnly | v8::DontDelete);
+  t->InstanceTemplate()->SetAccessor(String::New("fd"),
+                                     UDPWrap::GetFD,
+                                     NULL,
+                                     Handle<Value>(),
+                                     v8::DEFAULT,
+                                     attributes);
+
   NODE_SET_PROTOTYPE_METHOD(t, "bind", Bind);
   NODE_SET_PROTOTYPE_METHOD(t, "send", Send);
   NODE_SET_PROTOTYPE_METHOD(t, "bind6", Bind6);
@@ -123,6 +132,19 @@ Handle<Value> UDPWrap::New(const Arguments& args) {
 
   return scope.Close(args.This());
 }
+
+
+Handle<Value> UDPWrap::GetFD(Local<String>, const AccessorInfo& args) {
+#if defined(_WIN32)
+  return v8::Null();
+#else
+  HandleScope scope;
+  UNWRAP(UDPWrap)
+  int fd = (wrap == NULL) ? -1 : wrap->handle_.fd;
+  return scope.Close(Integer::New(fd));
+#endif
+}
+
 
 Handle<Value> UDPWrap::DoBind(const Arguments& args, int family) {
   HandleScope scope;

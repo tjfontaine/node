@@ -42,6 +42,7 @@ using v8::Context;
 using v8::Arguments;
 using v8::Integer;
 using v8::Undefined;
+using v8::PropertyAttribute;
 
 
 void TTYWrap::Initialize(Handle<Object> target) {
@@ -53,6 +54,15 @@ void TTYWrap::Initialize(Handle<Object> target) {
   t->SetClassName(String::NewSymbol("TTY"));
 
   t->InstanceTemplate()->SetInternalFieldCount(1);
+
+  enum PropertyAttribute attributes =
+      static_cast<PropertyAttribute>(v8::ReadOnly | v8::DontDelete);
+  t->InstanceTemplate()->SetAccessor(String::New("fd"),
+                                     StreamWrap::GetFD,
+                                     NULL,
+                                     Handle<Value>(),
+                                     v8::DEFAULT,
+                                     attributes);
 
   NODE_SET_PROTOTYPE_METHOD(t, "close", HandleWrap::Close);
   NODE_SET_PROTOTYPE_METHOD(t, "unref", HandleWrap::Unref);

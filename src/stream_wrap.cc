@@ -36,6 +36,7 @@
 
 namespace node {
 
+using v8::AccessorInfo;
 using v8::Object;
 using v8::Handle;
 using v8::Local;
@@ -111,6 +112,19 @@ StreamWrap::StreamWrap(Handle<Object> object, uv_stream_t* stream)
   if (stream) {
     stream->data = this;
   }
+}
+
+
+Handle<Value> StreamWrap::GetFD(Local<String>, const AccessorInfo& args) {
+#if defined(_WIN32)
+  return v8::Null();
+#else
+  HandleScope scope;
+  UNWRAP(StreamWrap)
+  int fd = -1;
+  if (wrap != NULL && wrap->stream_ != NULL) fd = wrap->stream_->fd;
+  return scope.Close(Integer::New(fd));
+#endif
 }
 
 

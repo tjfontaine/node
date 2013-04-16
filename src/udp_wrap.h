@@ -17,6 +17,8 @@ using v8::Arguments;
 class UDPWrap: public HandleWrap {
  public:
   static void Initialize(Handle<Object> target);
+  static v8::Handle<v8::Value> GetFD(v8::Local<v8::String>,
+                                     const v8::AccessorInfo&);
   static Handle<Value> New(const Arguments& args);
   static Handle<Value> Bind(const Arguments& args);
   static Handle<Value> Send(const Arguments& args);
