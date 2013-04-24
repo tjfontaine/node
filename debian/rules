@@ -1,10 +1,22 @@
 #!/usr/bin/make -f
 
-.PHONY: build install binary binary-arch clean
+ifneq (,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+  NUMJOBS = $(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+  MAKEFLAGS += -j$(NUMJOBS)
+endif
 
-config.gypi:
+.PHONY: build install binary binary-arch binary-indep clean
+
+configure32:
 	dh_testdir
-	python configure --prefix=/usr
+	python configure --prefix=/usr --dest-cpu=ia32
+
+configure64:
+	dh_testdir
+	python configure --prefix=/usr --dest-cpu=x64
+
+config.gypi: configure$(DEB_HOST_ARCH_BITS)
+	dh_testdir
 	touch $@
 
 build:  config.gypi
