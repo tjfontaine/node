@@ -10,7 +10,7 @@ fs.readFile('ChangeLog', 'utf8', function (err, data) {
 
     var version, date, d, t;
 
-    version = line.match(/^(\d+\.\d+\.\d+), Version (\d+\.\d+\.\d+)/);
+    version = line.match(/^(\d+\.\d+\.\d+), Version (\d+\.\d+\.\d+(-nightly-\d+)?)/);
 
     if (version) {
       if (inVer) {
