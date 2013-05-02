@@ -475,6 +475,8 @@ SLEEP_TIME_FACTOR = 1.25
 SEM_INVALID_VALUE = -1
 SEM_NOGPFAULTERRORBOX = 0x0002 # Microsoft Platform SDK WinBase.h
 
+import killableprocess
+
 def Win32SetErrorMode(mode):
   prev_error_mode = SEM_INVALID_VALUE
   try:
@@ -496,35 +498,15 @@ def RunProcess(context, timeout, args, **rest):
       error_mode = SEM_NOGPFAULTERRORBOX;
       prev_error_mode = Win32SetErrorMode(error_mode);
       Win32SetErrorMode(error_mode | prev_error_mode);
-  process = subprocess.Popen(
+  process = killableprocess.Popen(
     shell = utils.IsWindows(),
     args = popen_args,
     **rest
   )
   if utils.IsWindows() and context.suppress_dialogs and prev_error_mode != SEM_INVALID_VALUE:
     Win32SetErrorMode(prev_error_mode)
-  # Compute the end time - if the process crosses this limit we
-  # consider it timed out.
-  if timeout is None: end_time = None
-  else: end_time = time.time() + timeout
-  timed_out = False
-  # Repeatedly check the exit code from the process in a
-  # loop and keep track of whether or not it times out.
-  exit_code = None
-  sleep_time = INITIAL_SLEEP_TIME
-  while exit_code is None:
-    if (not end_time is None) and (time.time() >= end_time):
-      # Kill the process and wait for it to exit.
-      KillProcessWithID(process.pid)
-      exit_code = process.wait()
-      timed_out = True
-    else:
-      exit_code = process.poll()
-      time.sleep(sleep_time)
-      sleep_time = sleep_time * SLEEP_TIME_FACTOR
-      if sleep_time > MAX_SLEEP_TIME:
-        sleep_time = MAX_SLEEP_TIME
-  return (process, exit_code, timed_out)
+  exit_code = process.wait(timeout, group=True)
+  return (process, exit_code, process.kill_called)
 
 
 def PrintError(str):
