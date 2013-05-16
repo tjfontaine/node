@@ -1413,7 +1413,7 @@ Handle<Value> GetActiveHandles(const Arguments& args) {
 
   ngx_queue_foreach(q, &handle_wrap_queue) {
     HandleWrap* w = container_of(q, HandleWrap, handle_wrap_queue_);
-    if (w->object_.IsEmpty() || (w->flags_ & HandleWrap::kUnref)) continue;
+    if (w->object_.IsEmpty() || !uv_has_ref(w->handle__)) continue;
     Local<Value> obj = w->object_->Get(owner_sym);
     if (obj->IsUndefined()) obj = *w->object_;
     ary->Set(i++, obj);
