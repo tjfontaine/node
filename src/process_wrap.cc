@@ -70,6 +70,16 @@ class ProcessWrap : public HandleWrap {
     NODE_SET_PROTOTYPE_METHOD(constructor, "ref", HandleWrap::Ref);
     NODE_SET_PROTOTYPE_METHOD(constructor, "unref", HandleWrap::Unref);
 
+    enum v8::PropertyAttribute attributes =
+        static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete);
+
+    constructor->InstanceTemplate()->SetAccessor(String::New("refd"),
+                                                 HandleWrap::HasRef,
+                                                 NULL,
+                                                 Handle<Value>(),
+                                                 v8::DEFAULT,
+                                                 attributes);
+
     target->Set(String::NewSymbol("Process"), constructor->GetFunction());
   }
 

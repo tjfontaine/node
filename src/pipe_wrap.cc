@@ -92,6 +92,13 @@ void PipeWrap::Initialize(Handle<Object> target) {
                                      v8::DEFAULT,
                                      attributes);
 
+  t->InstanceTemplate()->SetAccessor(String::New("refd"),
+                                     HandleWrap::HasRef,
+                                     NULL,
+                                     Handle<Value>(),
+                                     v8::DEFAULT,
+                                     attributes);
+
   NODE_SET_PROTOTYPE_METHOD(t, "close", HandleWrap::Close);
   NODE_SET_PROTOTYPE_METHOD(t, "unref", HandleWrap::Unref);
   NODE_SET_PROTOTYPE_METHOD(t, "ref", HandleWrap::Ref);

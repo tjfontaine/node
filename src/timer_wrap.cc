@@ -51,6 +51,16 @@ class TimerWrap : public HandleWrap {
     constructor->InstanceTemplate()->SetInternalFieldCount(1);
     constructor->SetClassName(String::NewSymbol("Timer"));
 
+    enum v8::PropertyAttribute attributes =
+        static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete);
+
+    constructor->InstanceTemplate()->SetAccessor(String::New("refd"),
+                                                 HandleWrap::HasRef,
+                                                 NULL,
+                                                 Handle<Value>(),
+                                                 v8::DEFAULT,
+                                                 attributes);
+
     NODE_SET_PROTOTYPE_METHOD(constructor, "close", HandleWrap::Close);
     NODE_SET_PROTOTYPE_METHOD(constructor, "ref", HandleWrap::Ref);
     NODE_SET_PROTOTYPE_METHOD(constructor, "unref", HandleWrap::Unref);

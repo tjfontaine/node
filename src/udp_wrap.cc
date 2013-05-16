@@ -102,6 +102,13 @@ void UDPWrap::Initialize(Handle<Object> target) {
                                      v8::DEFAULT,
                                      attributes);
 
+  t->InstanceTemplate()->SetAccessor(String::New("refd"),
+                                     HandleWrap::HasRef,
+                                     NULL,
+                                     Handle<Value>(),
+                                     v8::DEFAULT,
+                                     attributes);
+
   NODE_SET_PROTOTYPE_METHOD(t, "bind", Bind);
   NODE_SET_PROTOTYPE_METHOD(t, "send", Send);
   NODE_SET_PROTOTYPE_METHOD(t, "bind6", Bind6);

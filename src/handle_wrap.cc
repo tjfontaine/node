@@ -80,6 +80,23 @@ Handle<Value> HandleWrap::Unref(const Arguments& args) {
 }
 
 
+Handle<Value> HandleWrap::HasRef(v8::Local<String>,
+                                 const v8::AccessorInfo& args) {
+  HandleScope scope(node_isolate);
+
+  UNWRAP_NO_ABORT(HandleWrap)
+
+  if (wrap != NULL && wrap->handle__ != NULL) {
+    if (uv_has_ref(wrap->handle__))
+      return v8::True(node_isolate);
+    else
+      return v8::False(node_isolate);
+  }
+
+  return v8::Undefined(node_isolate);
+}
+
+
 Handle<Value> HandleWrap::Close(const Arguments& args) {
   HandleScope scope(node_isolate);
 

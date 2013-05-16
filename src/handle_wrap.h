@@ -58,6 +58,8 @@ class HandleWrap {
     static v8::Handle<v8::Value> Close(const v8::Arguments& args);
     static v8::Handle<v8::Value> Ref(const v8::Arguments& args);
     static v8::Handle<v8::Value> Unref(const v8::Arguments& args);
+    static v8::Handle<v8::Value> HasRef(v8::Local<v8::String>,
+                                        const v8::AccessorInfo& args);
 
     inline uv_handle_t* GetHandle() { return handle__; };
 
