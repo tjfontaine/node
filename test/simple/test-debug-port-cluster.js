@@ -33,19 +33,18 @@ var args = [
 var child = spawn(process.execPath, args);
 var outputLines = [];
 
-child.stderr.on('data', function(data) {
-  var lines = data.toString().replace(/\r/g, '').trim().split('\n');
-  var line = lines[0];
-
-  lines.forEach(function(ln) { console.log('> ' + ln) } );
+var ls = new common.LineStream();
+ls.on('line', function (line) {
+  console.log('>', line);
 
   if (line === 'all workers are running') {
     assertOutputLines();
     process.exit();
   } else {
-    outputLines = outputLines.concat(lines);
+    outputLines.push(line);
   }
 });
+child.stderr.pipe(ls);
 
 setTimeout(function testTimedOut() {
   assert(false, 'test timed out.');

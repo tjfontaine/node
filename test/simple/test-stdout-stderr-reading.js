@@ -51,8 +51,10 @@ function parent() {
     c1out += chunk;
   });
   c1.stderr.setEncoding('utf8');
-  c1.stderr.on('data', function(chunk) {
-    console.error('c1err: ' + chunk.split('\n').join('\nc1err: '));
+  var ls1 = new common.LineStream();
+  c1.stderr.pipe(ls1);
+  ls1.on('line', function (line) {
+    console.error('c1err:', line);
   });
   c1.on('close', function(code, signal) {
     closes++;
@@ -69,8 +71,10 @@ function parent() {
     c2out += chunk;
   });
   c1.stderr.setEncoding('utf8');
-  c1.stderr.on('data', function(chunk) {
-    console.error('c1err: ' + chunk.split('\n').join('\nc1err: '));
+  var ls2 = new common.LineStream();
+  c2.stderr.pipe(ls2);
+  ls2.on('line', function (line) {
+    console.error('c2err:', line)
   });
   c2.on('close', function(code, signal) {
     closes++;

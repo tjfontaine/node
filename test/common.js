@@ -28,6 +28,8 @@ exports.libDir = path.join(exports.testDir, '../lib');
 exports.tmpDir = path.join(exports.testDir, 'tmp');
 exports.PORT = +process.env.NODE_COMMON_PORT || 12346;
 
+exports.LineStream = require('_linestream');
+
 if (process.platform === 'win32') {
   exports.PIPE = '\\\\.\\pipe\\libuv-test';
 } else {

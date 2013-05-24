@@ -30,48 +30,61 @@ var child = spawn(process.execPath, [ '-i' ], {
 
 var stdout = '';
 child.stdout.setEncoding('utf8');
-child.stdout.on('data', function(c) {
-  process.stdout.write(c);
-  stdout += c;
+var ls = new common.LineStream();
+var lines = [];
+ls.on('line', function(line) {
+  if (!line) return;
+  lines.push(line);
+  console.log(line);
+  var match = line.match(/THROW (\d+)/);
+  if (!match) return;
+  switch(match[1]) {
+    case '0':
+      fsTest();
+      break;
+    case '1':
+      eeTest();
+      break;
+    case '2':
+      child.stdin.end();
+      break;
+  }
 });
+child.stdout.pipe(ls);
 
 child.stdin.write = function(original) { return function(c) {
   process.stderr.write(c);
   return original.call(child.stdin, c);
 }}(child.stdin.write);
 
+function fsTest() {
+  var f = JSON.stringify(__filename);
+  child.stdin.write('fs.readFile(' + f + ', thrower);\n');
+}
+
+function eeTest() {
+  child.stdin.write('setTimeout(function() {\n' +
+                    '  var events = require("events");\n' +
+                    '  var e = new events.EventEmitter;\n' +
+                    '  process.nextTick(function() {\n' +
+                    '    e.on("x", thrower);\n' +
+                    '    setTimeout(function() {\n' +
+                    '      e.emit("x");\n' +
+                    '    });\n' +
+                    '  });\n' +
+                    '});"";\n');
+}
+
 child.stdout.once('data', function() {
   child.stdin.write('var throws = 0;');
   child.stdin.write('process.on("exit",function(){console.log(throws)});');
   child.stdin.write('function thrower(){console.log("THROW",throws++);XXX};');
   child.stdin.write('setTimeout(thrower);""\n');
-
-  setTimeout(fsTest, 50);
-  function fsTest() {
-    var f = JSON.stringify(__filename);
-    child.stdin.write('fs.readFile(' + f + ', thrower);\n');
-    setTimeout(eeTest, 50);
-  }
-
-  function eeTest() {
-    child.stdin.write('setTimeout(function() {\n' +
-                      '  var events = require("events");\n' +
-                      '  var e = new events.EventEmitter;\n' +
-                      '  process.nextTick(function() {\n' +
-                      '    e.on("x", thrower);\n' +
-                      '    setTimeout(function() {\n' +
-                      '      e.emit("x");\n' +
-                      '    });\n' +
-                      '  });\n' +
-                      '});"";\n');
-
-    setTimeout(child.stdin.end.bind(child.stdin), 50);
-  }
 });
 
 child.on('close', function(c) {
   assert(!c);
   // make sure we got 3 throws, in the end.
-  var lastLine = stdout.trim().split(/\r?\n/).pop();
+  var lastLine = lines.pop();
   assert.equal(lastLine, '> 3');
 });

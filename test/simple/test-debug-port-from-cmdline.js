@@ -27,10 +27,9 @@ var debugPort = common.PORT;
 var args = ['--debug-port=' + debugPort];
 var child = spawn(process.execPath, args);
 
-child.stderr.on('data', function(data) {
-  var lines = data.toString().replace(/\r/g, '').trim().split('\n');
-  lines.forEach(processStderrLine);
-});
+var ls = new common.LineStream();
+ls.on('line', processStderrLine);
+child.stderr.pipe(ls);
 
 setTimeout(testTimedOut, 3000);
 function testTimedOut() {

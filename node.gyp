@@ -20,6 +20,7 @@
       'src/node.js',
       'lib/_debugger.js',
       'lib/_linklist.js',
+      'lib/_linestream.js',
       'lib/assert.js',
       'lib/buffer.js',
       'lib/child_process.js',
