@@ -170,11 +170,21 @@ Handle<Value> StreamWrap::ReadStop(const Arguments& args) {
 }
 
 
+uv_buf_t StreamWrap::Alloc(size_t suggested_size) {
+  char* buf = slab_allocator->Allocate(object_, suggested_size);
+  return uv_buf_init(buf, suggested_size);
+}
+
+
+Local<Object> StreamWrap::Shrink(uv_buf_t buf, size_t nread) {
+  return slab_allocator->Shrink(object_, buf.base, nread);
+}
+
+
 uv_buf_t StreamWrap::OnAlloc(uv_handle_t* handle, size_t suggested_size) {
   StreamWrap* wrap = static_cast<StreamWrap*>(handle->data);
   assert(wrap->stream_ == reinterpret_cast<uv_stream_t*>(handle));
-  char* buf = slab_allocator->Allocate(wrap->object_, suggested_size);
-  return uv_buf_init(buf, suggested_size);
+  return wrap->Alloc(suggested_size);
 }
 
 
@@ -200,6 +210,39 @@ static Local<Object> AcceptHandle(uv_stream_t* pipe) {
 }
 
 
+void StreamWrap::AfterRead(uv_buf_t buf,
+                           size_t nread,
+                           uv_handle_type pending) {
+  Local<Object> slab = this->Shrink(buf, nread);
+
+  int argc = 3;
+  Local<Value> argv[4] = {
+    slab,
+    Integer::NewFromUnsigned(buf.base - Buffer::Data(slab), node_isolate),
+    Integer::NewFromUnsigned(nread, node_isolate)
+  };
+
+  Local<Object> pending_obj;
+  if (pending == UV_TCP) {
+    pending_obj = AcceptHandle<TCPWrap, uv_tcp_t>(stream_);
+  } else if (pending == UV_NAMED_PIPE) {
+    pending_obj = AcceptHandle<PipeWrap, uv_pipe_t>(stream_);
+  } else if (pending == UV_UDP) {
+    pending_obj = AcceptHandle<UDPWrap, uv_udp_t>(stream_);
+  } else {
+    assert(pending == UV_UNKNOWN_HANDLE);
+  }
+
+  if (!pending_obj.IsEmpty()) {
+    argv[3] = pending_obj;
+    argc++;
+  }
+
+
+  MakeCallback(object_, onread_sym, argc, argv);
+}
+
+
 void StreamWrap::OnReadCommon(uv_stream_t* handle, ssize_t nread,
     uv_buf_t buf, uv_handle_type pending) {
   HandleScope scope(node_isolate);
@@ -214,7 +257,7 @@ void StreamWrap::OnReadCommon(uv_stream_t* handle, ssize_t nread,
     // If libuv reports an error or EOF it *may* give us a buffer back. In that
     // case, return the space to the slab.
     if (buf.base != NULL) {
-      slab_allocator->Shrink(wrap->object_, buf.base, 0);
+      wrap->Shrink(buf, 0);
     }
 
     SetErrno(uv_last_error(uv_default_loop()));
@@ -223,35 +266,9 @@ void StreamWrap::OnReadCommon(uv_stream_t* handle, ssize_t nread,
   }
 
   assert(buf.base != NULL);
-  Local<Object> slab = slab_allocator->Shrink(wrap->object_,
-                                              buf.base,
-                                              nread);
 
   if (nread == 0) return;
   assert(static_cast<size_t>(nread) <= buf.len);
-
-  int argc = 3;
-  Local<Value> argv[4] = {
-    slab,
-    Integer::NewFromUnsigned(buf.base - Buffer::Data(slab), node_isolate),
-    Integer::NewFromUnsigned(nread, node_isolate)
-  };
-
-  Local<Object> pending_obj;
-  if (pending == UV_TCP) {
-    pending_obj = AcceptHandle<TCPWrap, uv_tcp_t>(handle);
-  } else if (pending == UV_NAMED_PIPE) {
-    pending_obj = AcceptHandle<PipeWrap, uv_pipe_t>(handle);
-  } else if (pending == UV_UDP) {
-    pending_obj = AcceptHandle<UDPWrap, uv_udp_t>(handle);
-  } else {
-    assert(pending == UV_UNKNOWN_HANDLE);
-  }
-
-  if (!pending_obj.IsEmpty()) {
-    argv[3] = pending_obj;
-    argc++;
-  }
 
   if (wrap->stream_->type == UV_TCP) {
     NODE_COUNT_NET_BYTES_RECV(nread);
@@ -259,7 +276,7 @@ void StreamWrap::OnReadCommon(uv_stream_t* handle, ssize_t nread,
     NODE_COUNT_PIPE_BYTES_RECV(nread);
   }
 
-  MakeCallback(wrap->object_, onread_sym, argc, argv);
+  wrap->AfterRead(buf, nread, pending);
 }
 
 
@@ -274,13 +291,9 @@ void StreamWrap::OnRead2(uv_pipe_t* handle, ssize_t nread, uv_buf_t buf,
 }
 
 
-size_t StreamWrap::WriteBuffer(Handle<Value> val, uv_buf_t* buf) {
-  assert(Buffer::HasInstance(val));
-
-  // Simple non-writev case
-  buf->base = Buffer::Data(val);
-  buf->len = Buffer::Length(val);
-
+size_t StreamWrap::BeforeWrite(char* data, size_t len, uv_buf_t* buf) {
+  buf->base = data;
+  buf->len = len;
   return buf->len;
 }
 
@@ -298,8 +311,9 @@ Handle<Value> StreamWrap::WriteBuffer(const Arguments& args) {
 
   req_wrap->object_->SetHiddenValue(buffer_sym, args[0]);
 
+  assert(Buffer::HasInstance(args[0]));
   uv_buf_t buf;
-  WriteBuffer(args[0], &buf);
+  wrap->BeforeWrite(Buffer::Data(args[0]), Buffer::Length(args[0]), &buf);
 
   int r = uv_write(&req_wrap->req_,
                    wrap->stream_,
@@ -371,8 +385,7 @@ Handle<Value> StreamWrap::WriteStringImpl(const Arguments& args) {
 
   uv_buf_t buf;
 
-  buf.base = data;
-  buf.len = data_size;
+  wrap->BeforeWrite(data, data_size, &buf);
 
   bool ipc_pipe = wrap->stream_->type == UV_NAMED_PIPE &&
                   reinterpret_cast<uv_pipe_t*>(wrap->stream_)->ipc;
@@ -492,8 +505,7 @@ Handle<Value> StreamWrap::Writev(const Arguments& args) {
 
     // Write buffer
     if (Buffer::HasInstance(chunk)) {
-      bufs[i].base = Buffer::Data(chunk);
-      bufs[i].len = Buffer::Length(chunk);
+      wrap->BeforeWrite(Buffer::Data(chunk), Buffer::Length(chunk), &bufs[i]);
       bytes += bufs[i].len;
       continue;
     }

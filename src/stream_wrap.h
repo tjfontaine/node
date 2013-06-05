@@ -53,9 +53,13 @@ class StreamWrap : public HandleWrap {
   static v8::Handle<v8::Value> WriteUtf8String(const v8::Arguments& args);
   static v8::Handle<v8::Value> WriteUcs2String(const v8::Arguments& args);
 
- protected:
-  static size_t WriteBuffer(v8::Handle<v8::Value> val, uv_buf_t* buf);
+  virtual uv_buf_t Alloc(size_t suggested_size);
+  virtual v8::Local<v8::Object> Shrink(uv_buf_t buf, size_t nread);
 
+  virtual void AfterRead(uv_buf_t buf, size_t nread, uv_handle_type pending);
+  virtual size_t BeforeWrite(char* data, size_t len, uv_buf_t* buf);
+
+ protected:
   StreamWrap(v8::Handle<v8::Object> object, uv_stream_t* stream);
   void StateChange() { }
   void UpdateWriteQueueSize();
