@@ -101,18 +101,6 @@ using namespace v8;
   SLURP_INT(_##conn, remotePort, &conn.port); \
   SLURP_INT(_##conn, bufferSize, &conn.buffered);
 
-#define SLURP_CONNECTION_HTTP_CLIENT(arg, conn) \
-  if (!(arg)->IsObject()) { \
-    return (ThrowException(Exception::Error(String::New("expected " \
-      "argument " #arg " to be a connection object")))); \
-  } \
-  node_dtrace_connection_t conn; \
-  Local<Object> _##conn = Local<Object>::Cast(arg); \
-  SLURP_INT(_##conn, fd, &conn.fd); \
-  SLURP_STRING(_##conn, host, &conn.remote); \
-  SLURP_INT(_##conn, port, &conn.port); \
-  SLURP_INT(_##conn, bufferSize, &conn.buffered);
-
 #define SLURP_CONNECTION_HTTP_CLIENT_RESPONSE(arg0, arg1, conn) \
   if (!(arg0)->IsObject()) { \
     return (ThrowException(Exception::Error(String::New("expected " \
@@ -278,7 +266,6 @@ Handle<Value> DTRACE_HTTP_SERVER_RESPONSE(const Arguments& args) {
 
 Handle<Value> DTRACE_HTTP_CLIENT_REQUEST(const Arguments& args) {
   node_dtrace_http_client_request_t req;
-  char *header;
 
 #ifndef HAVE_SYSTEMTAP
   if (!NODE_HTTP_CLIENT_REQUEST_ENABLED())
@@ -294,24 +281,10 @@ Handle<Value> DTRACE_HTTP_CLIENT_REQUEST(const Arguments& args) {
    * DTRACE_HTTP_CLIENT_REQUEST can be called.
    */
   Local<Object> arg0 = Local<Object>::Cast(args[0]);
-  SLURP_STRING(arg0, _header, &header);
+  SLURP_STRING(arg0, method, &req.method);
+  SLURP_STRING(arg0, path, &req.url);
 
-  req.method = header;
-
-  while (*header != '\0' && *header != ' ')
-    header++;
-
-  if (*header != '\0')
-    *header++ = '\0';
-
-  req.url = header;
-
-  while (*header != '\0' && *header != ' ')
-    header++;
-
-  *header = '\0';
-
-  SLURP_CONNECTION_HTTP_CLIENT(args[1], conn);
+  SLURP_CONNECTION(args[1], conn);
 #ifdef HAVE_SYSTEMTAP
   NODE_HTTP_CLIENT_REQUEST(&req, conn.fd, conn.remote, conn.port, \
                            conn.buffered);
