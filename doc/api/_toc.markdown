@@ -34,3 +34,4 @@
 * [Utilities](util.html)
 * [VM](vm.html)
 * [ZLIB](zlib.html)
+* [Tracing](tracing.html)
