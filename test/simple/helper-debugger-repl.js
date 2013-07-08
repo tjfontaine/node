@@ -39,16 +39,13 @@ function startDebugger(scriptToDebug) {
   console.error('./node', 'debug', '--port=' + port, scriptToDebug);
 
   child.stdout.setEncoding('utf-8');
-  child.stdout.on('data', function(data) {
-    data = (buffer + data).split('\n');
-    buffer = data.pop();
-    data.forEach(function(line) {
-      child.emit('line', line);
-    });
-  });
+  var ls = new common.LineStream();
+  child.stdout.pipe(ls);
   child.stderr.pipe(process.stderr);
 
-  child.on('line', function(line) {
+  ls.on('line', function(line) {
+    if (!line.trim()) return;
+
     line = line.replace(/^(debug> *)+/, '');
     console.log(line);
     assert.ok(expected.length > 0, 'Got unexpected line: ' + line);

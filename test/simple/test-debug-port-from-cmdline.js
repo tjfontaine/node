@@ -27,10 +27,9 @@ var debugPort = common.PORT;
 var args = ['--debug-port=' + debugPort];
 var child = spawn(process.execPath, args);
 
-child.stderr.on('data', function(data) {
-  var lines = data.toString().replace(/\r/g, '').trim().split('\n');
-  lines.forEach(processStderrLine);
-});
+var ls = new common.LineStream();
+child.stderr.pipe(ls).resume();
+ls.on('line', processStderrLine);
 
 setTimeout(testTimedOut, 3000);
 function testTimedOut() {
@@ -40,7 +39,7 @@ function testTimedOut() {
 // Give the child process small amout of time to start
 setTimeout(function() {
   process._debugProcess(child.pid);
-}, 100);
+}, 200);
 
 process.on('exit', function() {
   child.kill();
@@ -48,7 +47,8 @@ process.on('exit', function() {
 
 var outputLines = [];
 function processStderrLine(line) {
-  console.log('> ' + line);
+  if (!line.trim()) return;
+  console.log('>', line);
   outputLines.push(line);
 
   if (/debugger listening/.test(line)) {

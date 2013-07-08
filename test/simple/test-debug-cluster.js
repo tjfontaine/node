@@ -28,17 +28,18 @@ var child = spawn(process.execPath, args);
 var outputLines = [];
 
 
-child.stderr.on('data', function(data) {
-  var lines = data.toString().replace(/\r/g, '').trim().split('\n');
-  var line = lines[0];
+var ls = new common.LineStream();
+child.stderr.pipe(ls).resume();
+ls.on('line', function(line) {
+  if (!line.trim()) return;
 
-  lines.forEach(function(ln) { console.log('> ' + ln) } );
+  console.log('>', line);
 
   if (line === 'all workers are running') {
     assertOutputLines();
     process.exit();
   } else {
-    outputLines = outputLines.concat(lines);
+    outputLines.push(line);
   }
 });
 

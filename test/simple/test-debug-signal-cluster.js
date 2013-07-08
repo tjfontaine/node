@@ -29,17 +29,18 @@ var outputLines = [];
 var outputTimerId;
 var waitingForDebuggers = false;
 
-child.stderr.on('data', function(data) {
-  var lines = data.toString().replace(/\r/g, '').trim().split('\n');
-  var line = lines[0];
+var ls = new common.LineStream();
+child.stderr.pipe(ls).resume();
+ls.on('line', function(line) {
+  if (!line.trim()) return;
 
-  lines.forEach(function(ln) { console.log('> ' + ln) } );
+  console.log('>', line);
 
   if (outputTimerId !== undefined)
     clearTimeout(outputTimerId);
 
   if (waitingForDebuggers) {
-    outputLines = outputLines.concat(lines);
+    outputLines.push(line);
     outputTimerId = setTimeout(onNoMoreLines, 200);
   } else if (line === 'all workers are running') {
     waitingForDebuggers = true;
