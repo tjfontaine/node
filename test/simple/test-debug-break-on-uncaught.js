@@ -69,7 +69,7 @@ function runScenario(scriptName, throwsInFile, throwsOnLine, next) {
 
   var exceptions = [];
 
-  setTimeout(setupClient.bind(null, runTest), 200);
+  setTimeout(setupClient.bind(null, runTest), 500);
 
   function setupClient(callback) {
     var client = new debug.Client();
@@ -106,7 +106,7 @@ function runScenario(scriptName, throwsInFile, throwsOnLine, next) {
 
         client.reqContinue(function(error, result) {
           assert.ifError(error);
-          setTimeout(assertHasPaused.bind(null, client), 100);
+          setTimeout(assertHasPaused.bind(null, client), 250);
         });
       }
     );

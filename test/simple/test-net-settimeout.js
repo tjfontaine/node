@@ -26,7 +26,7 @@ var common = require('../common');
 var net = require('net');
 var assert = require('assert');
 
-var T = 100;
+var T = 300;
 
 var server = net.createServer(function(c) {
   c.write('hello');
