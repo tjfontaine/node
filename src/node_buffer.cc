@@ -49,8 +49,7 @@
   CHECK_NOT_OOB(ParseArrayIndex(start_arg, 0, &start));                     \
   CHECK_NOT_OOB(ParseArrayIndex(end_arg, end_max, &end));                   \
   if (end < start) end = start;                                             \
-  CHECK_NOT_OOB(end <= end_max);                                            \
-  size_t length = end - start;
+  size_t length = MIN(end, end_max) - start;
 
 namespace node {
 namespace Buffer {
