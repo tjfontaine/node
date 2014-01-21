@@ -1959,6 +1959,7 @@ typedef struct jsobj_print {
 	int jsop_nprops;
 	const char *jsop_member;
 	boolean_t jsop_found;
+	boolean_t jsop_json;
 } jsobj_print_t;
 
 static int jsobj_print_number(uintptr_t, jsobj_print_t *);
@@ -2064,12 +2065,14 @@ jsobj_print_prop(const char *desc, uintptr_t val, void *arg)
 	char **bufp = jsop->jsop_bufp;
 	size_t *lenp = jsop->jsop_lenp;
 
-	(void) bsnprintf(bufp, lenp, "%s\n%*s%s: ", jsop->jsop_nprops == 0 ?
-	    "{" : "", jsop->jsop_indent + 4, "", desc);
+	(void) bsnprintf(bufp, lenp, "%s%s%*s%s: ", jsop->jsop_nprops == 0 ?
+	    "{" : "", jsop->jsop_json ? "," : " ", jsop->jsop_indent + 4, "", desc);
 
 	descend = *jsop;
 	descend.jsop_depth--;
-	descend.jsop_indent += 4;
+
+	if (!jsop->jsop_json)
+		descend.jsop_indent += 4;
 
 	(void) jsobj_print(val, &descend);
 	(void) bsnprintf(bufp, lenp, ",");
@@ -2270,7 +2273,8 @@ jsobj_print_jsarray(uintptr_t addr, jsobj_print_t *jsop)
 	for (ii = 0; ii < len; ii++) {
 		(void) bsnprintf(bufp, lenp, "%*s", indent + 4, "");
 		(void) jsobj_print(elts[ii], &descend);
-		(void) bsnprintf(bufp, lenp, ",\n");
+		if (!jsop->jsop_json)
+			(void) bsnprintf(bufp, lenp, ",\n");
 	}
 
 	(void) bsnprintf(bufp, lenp, "%*s", indent, "");
@@ -3734,6 +3738,7 @@ dcmd_jsprint(uintptr_t addr, uint_t flags, int argc, const mdb_arg_t *argv)
 	i = mdb_getopts(argc, argv,
 	    'a', MDB_OPT_SETBITS, B_TRUE, &jsop.jsop_printaddr,
 	    'b', MDB_OPT_SETBITS, B_TRUE, &opt_b,
+      'j', MDB_OPT_SETBITS, B_FALSE, &jsop.jsop_json,
 	    'd', MDB_OPT_UINT64, &jsop.jsop_depth, NULL);
 
 	if (opt_b)
