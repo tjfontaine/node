@@ -223,7 +223,8 @@ void StreamWrap::WriteBuffer(const FunctionCallbackInfo<Value>& args) {
 
   // Allocate, or write rest
   storage = new char[sizeof(WriteWrap)];
-  req_wrap = new(storage) WriteWrap(env, req_wrap_obj, wrap);
+  req_wrap =
+      new(storage) WriteWrap(env, req_wrap_obj, wrap, wrap->provider_type());
 
   err = wrap->callbacks()->DoWrite(req_wrap,
                                    bufs,
@@ -311,7 +312,8 @@ void StreamWrap::WriteStringImpl(const FunctionCallbackInfo<Value>& args) {
   }
 
   storage = new char[sizeof(WriteWrap) + storage_size + 15];
-  req_wrap = new(storage) WriteWrap(env, req_wrap_obj, wrap);
+  req_wrap =
+      new(storage) WriteWrap(env, req_wrap_obj, wrap, wrap->provider_type());
 
   data = reinterpret_cast<char*>(ROUND_UP(
       reinterpret_cast<uintptr_t>(storage) + sizeof(WriteWrap), 16));
@@ -426,7 +428,7 @@ void StreamWrap::Writev(const FunctionCallbackInfo<Value>& args) {
   storage_size += sizeof(WriteWrap);
   char* storage = new char[storage_size];
   WriteWrap* req_wrap =
-      new(storage) WriteWrap(env, req_wrap_obj, wrap);
+      new(storage) WriteWrap(env, req_wrap_obj, wrap, wrap->provider_type());
 
   uint32_t bytes = 0;
   size_t offset = sizeof(WriteWrap);
