@@ -41,15 +41,21 @@ inline AsyncWrap::AsyncWrap(Environment* env,
     : BaseObject(env, object),
       async_flags_(NO_OPTIONS),
       provider_type_(provider) {
-  if (!env->has_async_listener())
+  // No need to run iff no activeContext and no matching providers for the
+  // asyncQueue.
+  if (!env->has_active_context() && (env->watched_providers() & provider) == 0)
     return;
 
-  // TODO(trevnorris): Do we really need to TryCatch this call?
+  env->set_provider_type(provider);
+
   v8::TryCatch try_catch;
   try_catch.SetVerbose(true);
 
-  v8::Local<v8::Value> val = object.As<v8::Value>();
-  env->async_listener_run_function()->Call(env->process_object(), 1, &val);
+  v8::Local<v8::Value> val_v[] = {
+    object.As<v8::Value>(),
+    v8::Integer::NewFromUnsigned(provider, env->isolate())
+  };
+  env->async_listener_run_function()->Call(env->process_object(), 2, val_v);
 
   if (!try_catch.HasCaught())
     async_flags_ |= HAS_ASYNC_LISTENER;
@@ -64,7 +70,7 @@ inline AsyncWrap::ProviderType AsyncWrap::provider_type() const {
 }
 
 
-inline bool AsyncWrap::has_async_listener() {
+inline bool AsyncWrap::has_async_queue() {
   return async_flags_ & HAS_ASYNC_LISTENER;
 }
 
@@ -84,7 +90,7 @@ inline v8::Handle<v8::Value> AsyncWrap::MakeDomainCallback(
   v8::TryCatch try_catch;
   try_catch.SetVerbose(true);
 
-  if (has_async_listener()) {
+  if (has_async_queue()) {
     v8::Local<v8::Value> val = context.As<v8::Value>();
     env()->async_listener_load_function()->Call(process, 1, &val);
 
@@ -124,7 +130,7 @@ inline v8::Handle<v8::Value> AsyncWrap::MakeDomainCallback(
       return Undefined(env()->isolate());
   }
 
-  if (has_async_listener()) {
+  if (has_async_queue()) {
     v8::Local<v8::Value> val = context.As<v8::Value>();
     env()->async_listener_unload_function()->Call(process, 1, &val);
 
@@ -173,7 +179,7 @@ inline v8::Handle<v8::Value> AsyncWrap::MakeCallback(
   v8::TryCatch try_catch;
   try_catch.SetVerbose(true);
 
-  if (has_async_listener()) {
+  if (has_async_queue()) {
     v8::Local<v8::Value> val = context.As<v8::Value>();
     env()->async_listener_load_function()->Call(process, 1, &val);
 
@@ -187,7 +193,7 @@ inline v8::Handle<v8::Value> AsyncWrap::MakeCallback(
     return Undefined(env()->isolate());
   }
 
-  if (has_async_listener()) {
+  if (has_async_queue()) {
     v8::Local<v8::Value> val = context.As<v8::Value>();
     env()->async_listener_unload_function()->Call(process, 1, &val);
 

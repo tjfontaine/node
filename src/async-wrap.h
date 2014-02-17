@@ -61,7 +61,7 @@ class AsyncWrap : public BaseObject {
 
   inline ~AsyncWrap();
 
-  inline bool has_async_listener();
+  inline bool has_async_queue();
 
   inline ProviderType provider_type() const;
 

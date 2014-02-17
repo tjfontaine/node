@@ -123,8 +123,12 @@ inline int Environment::AsyncListener::fields_count() const {
   return kFieldsCount;
 }
 
-inline bool Environment::AsyncListener::has_listener() const {
-  return fields_[kHasListener] > 0;
+inline bool Environment::AsyncListener::has_active_context() const {
+  return fields_[kActiveContextType] > 0;
+}
+
+inline void Environment::AsyncListener::set_provider_type(uint32_t provider) {
+  fields_[kActiveContextType] = provider;
 }
 
 inline uint32_t Environment::AsyncListener::watched_providers() const {
@@ -254,9 +258,14 @@ inline v8::Isolate* Environment::isolate() const {
   return isolate_;
 }
 
-inline bool Environment::has_async_listener() const {
+inline bool Environment::has_active_context() const {
   // The const_cast is okay, it doesn't violate conceptual const-ness.
-  return const_cast<Environment*>(this)->async_listener()->has_listener();
+  return const_cast<Environment*>(this)->async_listener()->has_active_context();
+}
+
+inline void Environment::set_provider_type(uint32_t provider) {
+  // The const_cast is okay, it doesn't violate conceptual const-ness.
+  const_cast<Environment*>(this)->async_listener()->set_provider_type(provider);
 }
 
 inline uint32_t Environment::watched_providers() const {
@@ -305,7 +314,7 @@ inline uv_loop_t* Environment::event_loop() const {
 }
 
 inline Environment::AsyncListener* Environment::async_listener() {
-  return &async_listener_count_;
+  return &async_listener_;
 }
 
 inline Environment::DomainFlag* Environment::domain_flag() {
