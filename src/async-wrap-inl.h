@@ -59,9 +59,6 @@ inline void AsyncWrap::Fire(AsyncWrap::EventType event) {
   if ((env()->watched_events() & event) == 0)
     return;
 
-  if (provider_type() == PROVIDER_TIMERWRAP)
-    return;
-
   v8::Local<v8::Value> val_v[] = {
     v8::Integer::NewFromUnsigned(provider_type(), env()->isolate()),
     v8::Integer::NewFromUnsigned(event),

@@ -87,7 +87,10 @@ class TimerWrap : public HandleWrap {
       : HandleWrap(env,
                    object,
                    reinterpret_cast<uv_handle_t*>(&handle_),
-                   AsyncWrap::PROVIDER_TIMERWRAP) {
+                   // ideally we would use TIMERWRAP here, but since a lot of
+                   // logic exists in JS for setTimeout and setInterval we rely
+                   // on that mechanism entirely for CREATE/BEFORE/AFTER
+                   AsyncWrap::PROVIDER_NONE) {
     int r = uv_timer_init(env->event_loop(), &handle_);
     assert(r == 0);
   }
