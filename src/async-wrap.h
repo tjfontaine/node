@@ -52,7 +52,8 @@ class AsyncWrap : public BaseObject {
     PROVIDER_TLSWRAP            = 1 << 12,
     PROVIDER_TTYWRAP            = 1 << 13,
     PROVIDER_UDPWRAP            = 1 << 14,
-    PROVIDER_ZLIB               = 1 << 15
+    PROVIDER_ZLIB               = 1 << 15,
+    PROVIDER_NEXTTICK           = 1 << 16
   };
 
   enum EventType {

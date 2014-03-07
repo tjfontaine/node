@@ -349,7 +349,13 @@
           domain.enter();
         threw = true;
         try {
+          tracing._asyncHandler(tracing.ASYNC_PROVIDERS.NEXTTICK,
+                                tracing.ASYNC_EVENTS.BEFORE,
+                                tock);
           callback();
+          tracing._asyncHandler(tracing.ASYNC_PROVIDERS.NEXTTICK,
+                                tracing.ASYNC_EVENTS.AFTER,
+                                tock);
           threw = false;
         } finally {
           if (threw)
@@ -376,6 +382,10 @@
 
       nextTickQueue.push(obj);
       tickInfo[kLength]++;
+
+      tracing._asyncHandler(tracing.ASYNC_PROVIDERS.NEXTTICK,
+                            tracing.ASYNC_EVENTS.CREATE,
+                            obj);
     }
   };
 
