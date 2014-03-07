@@ -251,10 +251,6 @@
       // if we handled an error, then make sure any ticks get processed
       } else {
         var t = setImmediate(process._tickCallback);
-        // Complete hack to make sure any errors thrown from async
-        // listeners don't cause an infinite loop.
-        if (t._asyncQueue)
-          t._asyncQueue = [];
       }
 
       return caught;
@@ -286,10 +282,6 @@
   startup.processNextTick = function() {
     var tracing = NativeModule.require('tracing');
     var nextTickQueue = [];
-    var asyncFlags = tracing._asyncFlags;
-    var _runAsyncQueue = tracing._runAsyncQueue;
-    var _loadAsyncQueue = tracing._loadAsyncQueue;
-    var _unloadAsyncQueue = tracing._unloadAsyncQueue;
 
     // This tickInfo thing is used so that the C++ code in src/node.cc
     // can have easy accesss to our nextTick state, and avoid unnecessary
@@ -332,9 +324,6 @@
         tock = nextTickQueue[tickInfo[kIndex]++];
         callback = tock.callback;
         threw = true;
-        hasQueue = !!tock._asyncQueue;
-        if (hasQueue)
-          _loadAsyncQueue(tock);
         try {
           callback();
           threw = false;
@@ -342,8 +331,6 @@
           if (threw)
             tickDone();
         }
-        if (hasQueue)
-          _unloadAsyncQueue(tock);
         if (1e4 < tickInfo[kIndex])
           tickDone();
       }
@@ -358,9 +345,6 @@
         tock = nextTickQueue[tickInfo[kIndex]++];
         callback = tock.callback;
         domain = tock.domain;
-        hasQueue = !!tock._asyncQueue;
-        if (hasQueue)
-          _loadAsyncQueue(tock);
         if (domain)
           domain.enter();
         threw = true;
@@ -371,8 +355,6 @@
           if (threw)
             tickDone();
         }
-        if (hasQueue)
-          _unloadAsyncQueue(tock);
         if (1e4 < tickInfo[kIndex])
           tickDone();
         if (domain)
@@ -390,11 +372,7 @@
       var obj = {
         callback: callback,
         domain: process.domain || null,
-        _asyncQueue: undefined
       };
-
-      if (asyncFlags[kCount] > 0)
-        _runAsyncQueue(obj);
 
       nextTickQueue.push(obj);
       tickInfo[kLength]++;

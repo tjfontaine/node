@@ -856,12 +856,8 @@ void SetupAsyncListener(const FunctionCallbackInfo<Value>& args) {
 
   assert(args[0]->IsObject());
   assert(args[1]->IsFunction());
-  assert(args[2]->IsFunction());
-  assert(args[3]->IsFunction());
 
-  env->set_async_listener_run_function(args[1].As<Function>());
-  env->set_async_listener_load_function(args[2].As<Function>());
-  env->set_async_listener_unload_function(args[3].As<Function>());
+  env->set_async_listener_handler_function(args[1].As<Function>());
 
   Local<Object> async_listener_flag_obj = args[0].As<Object>();
   Environment::AsyncListener* async_listener = env->async_listener();
@@ -953,19 +949,8 @@ Handle<Value> MakeDomainCallback(Environment* env,
   TryCatch try_catch;
   try_catch.SetVerbose(true);
 
-  bool has_async_queue = false;
-
-  if (recv->IsObject()) {
+  if (recv->IsObject())
     object = recv.As<Object>();
-    // TODO(trevnorris): This is sucky for performance. Fix it.
-    has_async_queue = object->Has(env->async_queue_string());
-    if (has_async_queue) {
-      env->async_listener_load_function()->Call(process, 1, &recv);
-
-      if (try_catch.HasCaught())
-        return Undefined(env->isolate());
-    }
-  }
 
   bool has_domain = false;
 
@@ -1006,13 +991,6 @@ Handle<Value> MakeDomainCallback(Environment* env,
     if (try_catch.HasCaught()) {
       return Undefined(env->isolate());
     }
-  }
-
-  if (has_async_queue) {
-    env->async_listener_unload_function()->Call(process, 1, &recv);
-
-    if (try_catch.HasCaught())
-      return Undefined(env->isolate());
   }
 
   Environment::TickInfo* tick_info = env->tick_info();
@@ -1062,26 +1040,10 @@ Handle<Value> MakeCallback(Environment* env,
   TryCatch try_catch;
   try_catch.SetVerbose(true);
 
-  // TODO(trevnorris): This is sucky for performance. Fix it.
-  bool has_async_queue =
-      recv->IsObject() && recv.As<Object>()->Has(env->async_queue_string());
-  if (has_async_queue) {
-    env->async_listener_load_function()->Call(process, 1, &recv);
-    if (try_catch.HasCaught())
-      return Undefined(env->isolate());
-  }
-
   Local<Value> ret = callback->Call(recv, argc, argv);
 
   if (try_catch.HasCaught()) {
     return Undefined(env->isolate());
-  }
-
-  if (has_async_queue) {
-    env->async_listener_unload_function()->Call(process, 1, &recv);
-
-    if (try_catch.HasCaught())
-      return Undefined(env->isolate());
   }
 
   Environment::TickInfo* tick_info = env->tick_info();

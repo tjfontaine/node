@@ -236,9 +236,7 @@ namespace node {
   V(zero_return_string, "ZERO_RETURN")                                        \
 
 #define ENVIRONMENT_STRONG_PERSISTENT_PROPERTIES(V)                           \
-  V(async_listener_run_function, v8::Function)                                \
-  V(async_listener_load_function, v8::Function)                               \
-  V(async_listener_unload_function, v8::Function)                             \
+  V(async_listener_handler_function, v8::Function)                            \
   V(binding_cache_object, v8::Object)                                         \
   V(buffer_constructor_function, v8::Function)                                \
   V(context, v8::Context)                                                     \
@@ -279,6 +277,7 @@ class Environment {
     inline bool has_active_context() const;
     inline void set_provider_type(uint32_t provider);
     inline uint32_t watched_providers() const;
+    inline uint32_t watched_events() const;
 
    private:
     friend class Environment;  // So we can call the constructor.
@@ -287,6 +286,7 @@ class Environment {
     enum Fields {
       kActiveContextType,
       kWatchedProviders,
+      kWatchedEvents,
       kFieldsCount
     };
 
@@ -363,6 +363,7 @@ class Environment {
   inline void set_provider_type(uint32_t provider);
   inline bool in_domain() const;
   inline uint32_t watched_providers() const;
+  inline uint32_t watched_events() const;
 
   static inline Environment* from_immediate_check_handle(uv_check_t* handle);
   inline uv_check_t* immediate_check_handle();

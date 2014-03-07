@@ -39,44 +39,44 @@ inline AsyncWrap::AsyncWrap(Environment* env,
                             v8::Handle<v8::Object> object,
                             ProviderType provider)
     : BaseObject(env, object),
-      async_flags_(NO_OPTIONS),
       provider_type_(provider) {
-  // No need to run iff no activeContext and no matching providers for the
-  // asyncQueue.
-  if (!env->has_active_context() && (env->watched_providers() & provider) == 0)
-    return;
-
-  env->set_provider_type(provider);
 
   v8::TryCatch try_catch;
   try_catch.SetVerbose(true);
 
-  v8::Local<v8::Value> val_v[] = {
-    object.As<v8::Value>(),
-    v8::Integer::NewFromUnsigned(provider, env->isolate())
-  };
-  env->async_listener_run_function()->Call(env->process_object(), 2, val_v);
-
-  if (!try_catch.HasCaught())
-    async_flags_ |= HAS_ASYNC_LISTENER;
+  Fire(EVENT_CREATE);
 }
 
 
 inline AsyncWrap::~AsyncWrap() {
 }
 
+
+inline void AsyncWrap::Fire(AsyncWrap::EventType event) {
+  if ((env()->watched_providers() & provider_type()) == 0)
+    return;
+
+  if ((env()->watched_events() & event) == 0)
+    return;
+
+  v8::Local<v8::Value> val_v[] = {
+    v8::Integer::NewFromUnsigned(provider_type(), env()->isolate()),
+    v8::Integer::NewFromUnsigned(event),
+    object().As<v8::Value>()
+  };
+
+  env()->async_listener_handler_function()->Call(env()->process_object(),
+                                                 ARRAY_SIZE(val_v),
+                                                 val_v);
+}
+
+
 inline AsyncWrap::ProviderType AsyncWrap::provider_type() const {
   return provider_type_;
 }
 
 
-inline bool AsyncWrap::has_async_queue() {
-  return async_flags_ & HAS_ASYNC_LISTENER;
-}
-
-
-// I hate you domains.
-inline v8::Handle<v8::Value> AsyncWrap::MakeDomainCallback(
+inline v8::Handle<v8::Value> AsyncWrap::MakeCallback(
     const v8::Handle<v8::Function> cb,
     int argc,
     v8::Handle<v8::Value>* argv) {
@@ -84,21 +84,25 @@ inline v8::Handle<v8::Value> AsyncWrap::MakeDomainCallback(
 
   v8::Local<v8::Object> context = object();
   v8::Local<v8::Object> process = env()->process_object();
-  v8::Local<v8::Value> domain_v = context->Get(env()->domain_string());
+  v8::Local<v8::Value> domain_v;
   v8::Local<v8::Object> domain;
+  bool has_domain = false;
 
   v8::TryCatch try_catch;
   try_catch.SetVerbose(true);
 
-  if (has_async_queue()) {
-    v8::Local<v8::Value> val = context.As<v8::Value>();
-    env()->async_listener_load_function()->Call(process, 1, &val);
+  env()->set_provider_type(provider_type());
 
-    if (try_catch.HasCaught())
-      return v8::Undefined(env()->isolate());
+  Fire(EVENT_BEFORE);
+
+  if (try_catch.HasCaught())
+    return v8::Undefined(env()->isolate());
+
+  if (env()->using_domains()) {
+    domain_v = context->Get(env()->domain_string());
+    has_domain = domain_v->IsObject();
   }
 
-  bool has_domain = domain_v->IsObject();
   if (has_domain) {
     domain = domain_v.As<v8::Object>();
 
@@ -116,9 +120,8 @@ inline v8::Handle<v8::Value> AsyncWrap::MakeDomainCallback(
 
   v8::Local<v8::Value> ret = cb->Call(context, argc, argv);
 
-  if (try_catch.HasCaught()) {
+  if (try_catch.HasCaught())
     return Undefined(env()->isolate());
-  }
 
   if (has_domain) {
     v8::Local<v8::Function> exit =
@@ -130,19 +133,15 @@ inline v8::Handle<v8::Value> AsyncWrap::MakeDomainCallback(
       return Undefined(env()->isolate());
   }
 
-  if (has_async_queue()) {
-    v8::Local<v8::Value> val = context.As<v8::Value>();
-    env()->async_listener_unload_function()->Call(process, 1, &val);
+  Fire(EVENT_AFTER);
 
-    if (try_catch.HasCaught())
-      return Undefined(env()->isolate());
-  }
+  if (try_catch.HasCaught())
+    return Undefined(env()->isolate());
 
   Environment::TickInfo* tick_info = env()->tick_info();
 
-  if (tick_info->in_tick()) {
+  if (tick_info->in_tick())
     return ret;
-  }
 
   if (tick_info->length() == 0) {
     tick_info->set_index(0);
@@ -160,68 +159,7 @@ inline v8::Handle<v8::Value> AsyncWrap::MakeDomainCallback(
     return Undefined(env()->isolate());
   }
 
-  return ret;
-}
-
-
-inline v8::Handle<v8::Value> AsyncWrap::MakeCallback(
-    const v8::Handle<v8::Function> cb,
-    int argc,
-    v8::Handle<v8::Value>* argv) {
-  if (env()->using_domains())
-    return MakeDomainCallback(cb, argc, argv);
-
-  assert(env()->context() == env()->isolate()->GetCurrentContext());
-
-  v8::Local<v8::Object> context = object();
-  v8::Local<v8::Object> process = env()->process_object();
-
-  v8::TryCatch try_catch;
-  try_catch.SetVerbose(true);
-
-  if (has_async_queue()) {
-    v8::Local<v8::Value> val = context.As<v8::Value>();
-    env()->async_listener_load_function()->Call(process, 1, &val);
-
-    if (try_catch.HasCaught())
-      return v8::Undefined(env()->isolate());
-  }
-
-  v8::Local<v8::Value> ret = cb->Call(context, argc, argv);
-
-  if (try_catch.HasCaught()) {
-    return Undefined(env()->isolate());
-  }
-
-  if (has_async_queue()) {
-    v8::Local<v8::Value> val = context.As<v8::Value>();
-    env()->async_listener_unload_function()->Call(process, 1, &val);
-
-    if (try_catch.HasCaught())
-      return v8::Undefined(env()->isolate());
-  }
-
-  Environment::TickInfo* tick_info = env()->tick_info();
-
-  if (tick_info->in_tick()) {
-    return ret;
-  }
-
-  if (tick_info->length() == 0) {
-    tick_info->set_index(0);
-    return ret;
-  }
-
-  tick_info->set_in_tick(true);
-
-  env()->tick_callback_function()->Call(process, 0, NULL);
-
-  tick_info->set_in_tick(false);
-
-  if (try_catch.HasCaught()) {
-    tick_info->set_last_threw(true);
-    return Undefined(env()->isolate());
-  }
+  env()->set_provider_type(PROVIDER_NONE);
 
   return ret;
 }

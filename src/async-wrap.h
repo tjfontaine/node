@@ -55,13 +55,18 @@ class AsyncWrap : public BaseObject {
     PROVIDER_ZLIB               = 1 << 15
   };
 
+  enum EventType {
+    EVENT_CREATE = 1 << 0,
+    EVENT_BEFORE = 1 << 1,
+    EVENT_AFTER = 1 << 2,
+    EVENT_ERROR = 1 << 3
+  };
+
   inline AsyncWrap(Environment* env,
                    v8::Handle<v8::Object> object,
                    ProviderType provider);
 
   inline ~AsyncWrap();
-
-  inline bool has_async_queue();
 
   inline ProviderType provider_type() const;
 
@@ -76,17 +81,11 @@ class AsyncWrap : public BaseObject {
                                             int argc,
                                             v8::Handle<v8::Value>* argv);
 
+  inline void Fire(EventType event);
+
  private:
   inline AsyncWrap();
 
-  // TODO(trevnorris): BURN IN FIRE! Remove this as soon as a suitable
-  // replacement is committed.
-  inline v8::Handle<v8::Value> MakeDomainCallback(
-      const v8::Handle<v8::Function> cb,
-      int argc,
-      v8::Handle<v8::Value>* argv);
-
-  uint32_t async_flags_;
   ProviderType provider_type_;
 };
 
