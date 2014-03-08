@@ -125,7 +125,8 @@ void PipeWrap::New(const FunctionCallbackInfo<Value>& args) {
   assert(args.IsConstructCall());
   HandleScope handle_scope(args.GetIsolate());
   Environment* env = Environment::GetCurrent(args.GetIsolate());
-  new PipeWrap(env, args.This(), args[0]->IsTrue());
+  PipeWrap* wrap = new PipeWrap(env, args.This(), args[0]->IsTrue());
+  wrap->Create();
 }
 
 
@@ -287,6 +288,8 @@ void PipeWrap::Connect(const FunctionCallbackInfo<Value>& args) {
   ConnectWrap* req_wrap = new ConnectWrap(env,
                                           req_wrap_obj,
                                           AsyncWrap::PROVIDER_PIPEWRAP);
+  req_wrap->Create();
+
   uv_pipe_connect(&req_wrap->req_,
                   &wrap->handle_,
                   *name,

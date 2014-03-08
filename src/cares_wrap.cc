@@ -835,6 +835,7 @@ static void Query(const FunctionCallbackInfo<Value>& args) {
   Local<Object> req_wrap_obj = args[0].As<Object>();
   Local<String> string = args[1].As<String>();
   Wrap* wrap = new Wrap(env, req_wrap_obj);
+  wrap->Create();
 
   String::Utf8Value name(string);
   int err = wrap->Send(*name);
@@ -990,6 +991,8 @@ static void GetAddrInfo(const FunctionCallbackInfo<Value>& args) {
     new GetAddrInfoReqWrap(env,
                            req_wrap_obj,
                            AsyncWrap::PROVIDER_GETADDRINFOREQWRAP);
+
+  req_wrap->Create();
 
   struct addrinfo hints;
   memset(&hints, 0, sizeof(struct addrinfo));

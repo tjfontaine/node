@@ -131,7 +131,8 @@ void UDPWrap::New(const FunctionCallbackInfo<Value>& args) {
   assert(args.IsConstructCall());
   HandleScope handle_scope(args.GetIsolate());
   Environment* env = Environment::GetCurrent(args.GetIsolate());
-  new UDPWrap(env, args.This());
+  UDPWrap *wrap = new UDPWrap(env, args.This());
+  wrap->Create();
 }
 
 
@@ -272,6 +273,7 @@ void UDPWrap::DoSend(const FunctionCallbackInfo<Value>& args, int family) {
   assert(length <= Buffer::Length(buffer_obj) - offset);
 
   SendWrap* req_wrap = new SendWrap(env, req_wrap_obj, have_callback);
+  req_wrap->Create();
 
   uv_buf_t buf = uv_buf_init(Buffer::Data(buffer_obj) + offset,
                              length);

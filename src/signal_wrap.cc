@@ -69,7 +69,8 @@ class SignalWrap : public HandleWrap {
     assert(args.IsConstructCall());
     HandleScope handle_scope(args.GetIsolate());
     Environment* env = Environment::GetCurrent(args.GetIsolate());
-    new SignalWrap(env, args.This());
+    SignalWrap* wrap = new SignalWrap(env, args.This());
+    wrap->Create();
   }
 
   SignalWrap(Environment* env, Handle<Object> object)

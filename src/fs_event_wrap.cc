@@ -98,7 +98,8 @@ void FSEventWrap::New(const FunctionCallbackInfo<Value>& args) {
   assert(args.IsConstructCall());
   HandleScope handle_scope(args.GetIsolate());
   Environment* env = Environment::GetCurrent(args.GetIsolate());
-  new FSEventWrap(env, args.This());
+  FSEventWrap *wrap = new FSEventWrap(env, args.This());
+  wrap->Create();
 }
 
 

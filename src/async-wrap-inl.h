@@ -40,15 +40,17 @@ inline AsyncWrap::AsyncWrap(Environment* env,
                             ProviderType provider)
     : BaseObject(env, object),
       provider_type_(provider) {
-
-  v8::TryCatch try_catch;
-  try_catch.SetVerbose(true);
-
-  Fire(EVENT_CREATE);
 }
 
 
 inline AsyncWrap::~AsyncWrap() {
+}
+
+
+inline void AsyncWrap::Create() {
+  v8::TryCatch try_catch;
+  try_catch.SetVerbose(true);
+  Fire(EVENT_CREATE);
 }
 
 

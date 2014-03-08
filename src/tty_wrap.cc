@@ -173,6 +173,7 @@ void TTYWrap::New(const FunctionCallbackInfo<Value>& args) {
   assert(fd >= 0);
 
   TTYWrap* wrap = new TTYWrap(env, args.This(), fd, args[1]->IsTrue());
+  wrap->Create();
   wrap->UpdateWriteQueueSize();
 }
 

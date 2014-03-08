@@ -84,6 +84,8 @@ class AsyncWrap : public BaseObject {
 
   inline void Fire(EventType event);
 
+  inline void Create();
+
  private:
   inline AsyncWrap();
 

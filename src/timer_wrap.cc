@@ -80,7 +80,8 @@ class TimerWrap : public HandleWrap {
     assert(args.IsConstructCall());
     HandleScope handle_scope(args.GetIsolate());
     Environment* env = Environment::GetCurrent(args.GetIsolate());
-    new TimerWrap(env, args.This());
+    TimerWrap* wrap = new TimerWrap(env, args.This());
+    wrap->Create();
   }
 
   TimerWrap(Environment* env, Handle<Object> object)

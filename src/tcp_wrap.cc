@@ -134,6 +134,7 @@ void TCPWrap::New(const FunctionCallbackInfo<Value>& args) {
   HandleScope handle_scope(args.GetIsolate());
   Environment* env = Environment::GetCurrent(args.GetIsolate());
   TCPWrap* wrap = new TCPWrap(env, args.This());
+  wrap->Create();
   assert(wrap);
 }
 
@@ -390,6 +391,7 @@ void TCPWrap::Connect(const FunctionCallbackInfo<Value>& args) {
     ConnectWrap* req_wrap = new ConnectWrap(env,
                                             req_wrap_obj,
                                             AsyncWrap::PROVIDER_TCPWRAP);
+    req_wrap->Create();
     err = uv_tcp_connect(&req_wrap->req_,
                          &wrap->handle_,
                          reinterpret_cast<const sockaddr*>(&addr),
@@ -424,6 +426,7 @@ void TCPWrap::Connect6(const FunctionCallbackInfo<Value>& args) {
     ConnectWrap* req_wrap = new ConnectWrap(env,
                                             req_wrap_obj,
                                             AsyncWrap::PROVIDER_TCPWRAP);
+    req_wrap->Create();
     err = uv_tcp_connect(&req_wrap->req_,
                          &wrap->handle_,
                          reinterpret_cast<const sockaddr*>(&addr),

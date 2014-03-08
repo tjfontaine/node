@@ -75,7 +75,8 @@ class ProcessWrap : public HandleWrap {
     assert(args.IsConstructCall());
     HandleScope handle_scope(args.GetIsolate());
     Environment* env = Environment::GetCurrent(args.GetIsolate());
-    new ProcessWrap(env, args.This());
+    ProcessWrap* wrap = new ProcessWrap(env, args.This());
+    wrap->Create();
   }
 
   ProcessWrap(Environment* env, Handle<Object> object)

@@ -562,6 +562,8 @@ void StreamWrap::Shutdown(const FunctionCallbackInfo<Value>& args) {
   ShutdownWrap* req_wrap = new ShutdownWrap(env,
                                             req_wrap_obj,
                                             AsyncWrap::PROVIDER_SHUTDOWNWRAP);
+  req_wrap->Create();
+
   int err = wrap->callbacks()->DoShutdown(req_wrap, AfterShutdown);
   req_wrap->Dispatched();
   if (err)
