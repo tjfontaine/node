@@ -64,6 +64,11 @@ class AsyncWrap : public BaseObject {
   template <class Type>
   static inline void AddMethods(v8::Local<v8::FunctionTemplate> t);
 
+  inline void Call(v8::Local<v8::Function> func,
+                   v8::Handle<v8::Object> recv,
+                   size_t argc,
+                   v8::Handle<v8::Value>* argv);
+
   inline bool has_async_queue();
 
   inline ProviderType provider_type() const;

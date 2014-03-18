@@ -61,7 +61,7 @@ inline AsyncWrap::AsyncWrap(Environment* env,
 
   if (parent_has_async_queue) {
     parent_val = parent->object().As<v8::Value>();
-    env->async_listener_load_function()->Call(process, 1, &parent_val);
+    Call(env->async_listener_load_function(), process, 1, &parent_val);
 
     if (try_catch.HasCaught())
       return;
@@ -71,7 +71,7 @@ inline AsyncWrap::AsyncWrap(Environment* env,
     object.As<v8::Value>(),
     v8::Integer::NewFromUnsigned(env->isolate(), provider)
   };
-  env->async_listener_run_function()->Call(process, ARRAY_SIZE(val_v), val_v);
+  Call(env->async_listener_run_function(), process, ARRAY_SIZE(val_v), val_v);
 
   if (!try_catch.HasCaught())
     async_flags_ |= HAS_ASYNC_LISTENER;
@@ -79,11 +79,20 @@ inline AsyncWrap::AsyncWrap(Environment* env,
     return;
 
   if (parent_has_async_queue)
-    env->async_listener_unload_function()->Call(process, 1, &parent_val);
+    Call(env->async_listener_unload_function(), process, 1, &parent_val);
 }
 
 
 inline AsyncWrap::~AsyncWrap() {
+}
+
+
+inline void AsyncWrap::Call(v8::Local<v8::Function> func,
+                            v8::Handle<v8::Object> recv,
+                            size_t argc,
+                            v8::Handle<v8::Value>* argv) {
+  if (!func->IsUndefined())
+    func->Call(recv, argc, argv);
 }
 
 
@@ -118,7 +127,7 @@ inline v8::Handle<v8::Value> AsyncWrap::MakeCallback(
 
   if (has_async_queue()) {
     v8::Local<v8::Value> val = context.As<v8::Value>();
-    env()->async_listener_load_function()->Call(process, 1, &val);
+    Call(env()->async_listener_load_function(), process, 1, &val);
 
     if (try_catch.HasCaught())
       return v8::Undefined(env()->isolate());
@@ -164,7 +173,7 @@ inline v8::Handle<v8::Value> AsyncWrap::MakeCallback(
 
   if (has_async_queue()) {
     v8::Local<v8::Value> val = context.As<v8::Value>();
-    env()->async_listener_unload_function()->Call(process, 1, &val);
+    Call(env()->async_listener_unload_function(), process, 1, &val);
 
     if (try_catch.HasCaught())
       return Undefined(env()->isolate());
