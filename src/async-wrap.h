@@ -85,13 +85,6 @@ class AsyncWrap : public BaseObject {
   static inline void RemoveAsyncQueue(
       const v8::FunctionCallbackInfo<v8::Value>& args);
 
-  // TODO(trevnorris): BURN IN FIRE! Remove this as soon as a suitable
-  // replacement is committed.
-  inline v8::Handle<v8::Value> MakeDomainCallback(
-      const v8::Handle<v8::Function> cb,
-      int argc,
-      v8::Handle<v8::Value>* argv);
-
   uint32_t async_flags_;
   ProviderType provider_type_;
 };
