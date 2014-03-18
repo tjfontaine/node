@@ -892,32 +892,6 @@ Local<Value> WinapiErrnoException(Isolate* isolate,
 #endif
 
 
-void SetupAsyncListener(const FunctionCallbackInfo<Value>& args) {
-  HandleScope handle_scope(args.GetIsolate());
-  Environment* env = Environment::GetCurrent(args.GetIsolate());
-
-  assert(args[0]->IsObject());
-  assert(args[1]->IsFunction());
-  assert(args[2]->IsFunction());
-  assert(args[3]->IsFunction());
-
-  env->set_async_listener_run_function(args[1].As<Function>());
-  env->set_async_listener_load_function(args[2].As<Function>());
-  env->set_async_listener_unload_function(args[3].As<Function>());
-
-  Local<Object> async_listener_flag_obj = args[0].As<Object>();
-  Environment::AsyncListener* async_listener = env->async_listener();
-  async_listener_flag_obj->SetIndexedPropertiesToExternalArrayData(
-      async_listener->fields(),
-      kExternalUnsignedIntArray,
-      async_listener->fields_count());
-
-  // Do a little housekeeping.
-  env->process_object()->Delete(
-      FIXED_ONE_BYTE_STRING(args.GetIsolate(), "_setupAsyncListener"));
-}
-
-
 void SetupDomainUse(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args.GetIsolate());
 
@@ -2695,7 +2669,6 @@ void SetupProcessObject(Environment* env,
 
   NODE_SET_METHOD(process, "binding", Binding);
 
-  NODE_SET_METHOD(process, "_setupAsyncListener", SetupAsyncListener);
   NODE_SET_METHOD(process, "_setupNextTick", SetupNextTick);
   NODE_SET_METHOD(process, "_setupDomainUse", SetupDomainUse);
 
