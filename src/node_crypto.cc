@@ -1741,6 +1741,8 @@ void Connection::Initialize(Environment* env, Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "setSNICallback",  Connection::SetSNICallback);
 #endif
 
+  AsyncWrap::AddMethods<Connection>(t);
+
   target->Set(FIXED_ONE_BYTE_STRING(env->isolate(), "Connection"),
               t->GetFunction());
 }
@@ -4185,6 +4187,8 @@ void Certificate::Initialize(Environment* env, Handle<Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "verifySpkac", VerifySpkac);
   NODE_SET_PROTOTYPE_METHOD(t, "exportPublicKey", ExportPublicKey);
   NODE_SET_PROTOTYPE_METHOD(t, "exportChallenge", ExportChallenge);
+
+  AsyncWrap::AddMethods<Certificate>(t);
 
   target->Set(FIXED_ONE_BYTE_STRING(env->isolate(), "Certificate"),
               t->GetFunction());
