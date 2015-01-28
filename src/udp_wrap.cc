@@ -54,11 +54,22 @@ using v8::Value;
 
 class SendWrap : public ReqWrap<uv_udp_send_t> {
  public:
+  static SendWrap* Allocate(Environment* env, Local<Object> holder, bool cb);
+  NODE_UMC_DESTROYV(SendWrap);
+
   SendWrap(Environment* env, Local<Object> req_wrap_obj, bool have_callback);
   inline bool have_callback() const;
  private:
   const bool have_callback_;
 };
+
+
+SendWrap* SendWrap::Allocate(Environment* env,
+                             Local<Object> holder,
+                             bool cb) {
+  NODE_UMC_DOALLOC(SendWrap);
+  return new(storage) SendWrap(env, holder, cb);
+}
 
 
 SendWrap::SendWrap(Environment* env,
@@ -147,11 +158,11 @@ void UDPWrap::New(const FunctionCallbackInfo<Value>& args) {
   CHECK(args.IsConstructCall());
   Environment* env = Environment::GetCurrent(args.GetIsolate());
   if (args.Length() == 0) {
-    new UDPWrap(env, args.This(), NULL);
+    UDPWrap::Allocate(env, args.This(), NULL);
   } else if (args[0]->IsExternal()) {
-    new UDPWrap(env,
-                args.This(),
-                static_cast<AsyncWrap*>(args[0].As<External>()->Value()));
+    UDPWrap::Allocate(env,
+                      args.This(),
+                      static_cast<AsyncWrap*>(args[0].As<External>()->Value()));
   } else {
     UNREACHABLE();
   }
@@ -293,7 +304,7 @@ void UDPWrap::DoSend(const FunctionCallbackInfo<Value>& args, int family) {
 
   assert(length <= Buffer::Length(buffer_obj) - offset);
 
-  SendWrap* req_wrap = new SendWrap(env, req_wrap_obj, have_callback);
+  SendWrap* req_wrap = SendWrap::Allocate(env, req_wrap_obj, have_callback);
 
   uv_buf_t buf = uv_buf_init(Buffer::Data(buffer_obj) + offset,
                              length);
@@ -323,7 +334,7 @@ void UDPWrap::DoSend(const FunctionCallbackInfo<Value>& args, int family) {
 
   req_wrap->Dispatched();
   if (err)
-    delete req_wrap;
+    req_wrap->Destroy();
 
   args.GetReturnValue().Set(err);
 }
@@ -396,7 +407,7 @@ void UDPWrap::OnSend(uv_udp_send_t* req, int status) {
     Local<Value> arg = Integer::New(env->isolate(), status);
     req_wrap->MakeCallback(env->oncomplete_string(), 1, &arg);
   }
-  delete req_wrap;
+  req_wrap->Destroy();
 }
 
 

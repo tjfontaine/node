@@ -30,6 +30,16 @@ namespace node {
 
 class PipeWrap : public StreamWrap {
  public:
+  NODE_UMC_DESTROYV(PipeWrap);
+
+  static PipeWrap* Allocate(Environment* env,
+                            v8::Handle<v8::Object> object,
+                            bool ipc,
+                            AsyncWrap* parent) {
+    NODE_UMC_DOALLOC(PipeWrap);
+    return new(storage) PipeWrap(env, object, ipc, parent);
+  }
+
   uv_pipe_t* UVHandle();
 
   static v8::Local<v8::Object> Instantiate(Environment* env, AsyncWrap* parent);

@@ -44,6 +44,7 @@ using v8::Value;
 
 const uint32_t kOnTimeout = 0;
 
+
 class TimerWrap : public HandleWrap {
  public:
   static void Initialize(Handle<Object> target,
@@ -74,6 +75,9 @@ class TimerWrap : public HandleWrap {
   }
 
  private:
+  NODE_UMC_ALLOCATE(TimerWrap);
+  NODE_UMC_DESTROYV(TimerWrap);
+
   static void New(const FunctionCallbackInfo<Value>& args) {
     // This constructor should not be exposed to public javascript.
     // Therefore we assert that we are not trying to call this as a
@@ -81,7 +85,7 @@ class TimerWrap : public HandleWrap {
     assert(args.IsConstructCall());
     HandleScope handle_scope(args.GetIsolate());
     Environment* env = Environment::GetCurrent(args.GetIsolate());
-    new TimerWrap(env, args.This());
+    TimerWrap::Allocate(env, args.This());
   }
 
   TimerWrap(Environment* env, Handle<Object> object)

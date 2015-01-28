@@ -46,6 +46,8 @@ class TLSCallbacks : public crypto::SSLWrap<TLSCallbacks>,
                      public StreamWrapCallbacks,
                      public AsyncWrap {
  public:
+  NODE_UMC_DESTROYV(TLSCallbacks);
+
   ~TLSCallbacks();
 
   static void Initialize(v8::Handle<v8::Object> target,
@@ -86,6 +88,14 @@ class TLSCallbacks : public crypto::SSLWrap<TLSCallbacks>,
   // Write callback queue's item
   class WriteItem {
    public:
+    NODE_UMC_DESTROYV(WriteItem);
+    NODE_UMC_NEWOP;
+
+    static WriteItem* Allocate(WriteWrap* w, uv_write_cb cb) {
+      NODE_UMC_DOALLOC(WriteItem);
+      return new(storage) WriteItem(w, cb);
+    }
+
     WriteItem(WriteWrap* w, uv_write_cb cb) : w_(w), cb_(cb) {
     }
     ~WriteItem() {
@@ -97,6 +107,14 @@ class TLSCallbacks : public crypto::SSLWrap<TLSCallbacks>,
     uv_write_cb cb_;
     QUEUE member_;
   };
+
+  static TLSCallbacks* Allocate(Environment* env,
+                                Kind kind,
+                                v8::Handle<v8::Object> sc,
+                                StreamWrapCallbacks* old) {
+    NODE_UMC_DOALLOC(TLSCallbacks);
+    return new(storage) TLSCallbacks(env, kind, sc, old);
+  }
 
   TLSCallbacks(Environment* env,
                Kind kind,

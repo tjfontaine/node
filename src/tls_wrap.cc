@@ -116,7 +116,7 @@ TLSCallbacks::~TLSCallbacks() {
     QUEUE_REMOVE(q);
 
     WriteItem* wi = ContainerOf(&WriteItem::member_, q);
-    delete wi;
+    wi->Destroy();
   }
 }
 
@@ -151,7 +151,7 @@ bool TLSCallbacks::InvokeQueued(int status) {
 
     WriteItem* wi = ContainerOf(&WriteItem::member_, q);
     wi->cb_(&wi->w_->req_, status);
-    delete wi;
+    wi->Destroy();
   }
 
   return true;
@@ -227,7 +227,7 @@ void TLSCallbacks::Wrap(const FunctionCallbackInfo<Value>& args) {
 
   TLSCallbacks* callbacks = NULL;
   WITH_GENERIC_STREAM(env, stream, {
-    callbacks = new TLSCallbacks(env, kind, sc, wrap->callbacks());
+    callbacks = TLSCallbacks::Allocate(env, kind, sc, wrap->callbacks());
     wrap->OverrideCallbacks(callbacks, true);
   });
 
@@ -573,7 +573,7 @@ int TLSCallbacks::DoWrite(WriteWrap* w,
   }
 
   // Queue callback to execute it on next tick
-  WriteItem* wi = new WriteItem(w, cb);
+  WriteItem* wi = WriteItem::Allocate(w, cb);
   QUEUE_INSERT_TAIL(&write_item_queue_, &wi->member_);
 
   // Write queued data

@@ -45,6 +45,9 @@ using v8::Value;
 
 class FSEventWrap: public HandleWrap {
  public:
+  NODE_UMC_ALLOCATE(FSEventWrap);
+  NODE_UMC_DESTROYV(FSEventWrap);
+
   static void Initialize(Handle<Object> target,
                          Handle<Value> unused,
                          Handle<Context> context);
@@ -98,7 +101,7 @@ void FSEventWrap::New(const FunctionCallbackInfo<Value>& args) {
   assert(args.IsConstructCall());
   HandleScope handle_scope(args.GetIsolate());
   Environment* env = Environment::GetCurrent(args.GetIsolate());
-  new FSEventWrap(env, args.This());
+  FSEventWrap::Allocate(env, args.This());
 }
 
 

@@ -165,6 +165,15 @@ struct StringPtr {
 
 class Parser : public BaseObject {
  public:
+  NODE_UMC_DESTROYV(Parser);
+
+  static Parser* Allocate(Environment *env,
+                          Local<Object> wrap,
+                          enum http_parser_type type) {
+    NODE_UMC_DOALLOC(Parser);
+    return new(storage) Parser(env, wrap, type);
+  }
+
   Parser(Environment* env, Local<Object> wrap, enum http_parser_type type)
       : BaseObject(env, wrap),
         current_buffer_len_(0),
@@ -355,14 +364,14 @@ class Parser : public BaseObject {
     http_parser_type type =
         static_cast<http_parser_type>(args[0]->Int32Value());
     assert(type == HTTP_REQUEST || type == HTTP_RESPONSE);
-    new Parser(env, args.This(), type);
+    Parser::Allocate(env, args.This(), type);
   }
 
 
   static void Close(const FunctionCallbackInfo<Value>& args) {
     HandleScope handle_scope(args.GetIsolate());
     Parser* parser = Unwrap<Parser>(args.Holder());
-    delete parser;
+    parser->Destroy();
   }
 
 

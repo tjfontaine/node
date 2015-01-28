@@ -24,13 +24,17 @@
 
 #include "env.h"
 #include "v8.h"
+#include "allocator.h"
 
 namespace node {
 
 class BaseObject {
  public:
   BaseObject(Environment* env, v8::Local<v8::Object> handle);
-  ~BaseObject();
+  virtual ~BaseObject();
+
+  NODE_UMC_NEWOP;
+  virtual void Destroy() = 0;
 
   // Returns the wrapped object.  Returns an empty handle when
   // persistent.IsEmpty() is true.

@@ -63,7 +63,7 @@ inline void BaseObject::WeakCallback(
     const v8::WeakCallbackData<v8::Object, Type>& data) {
   Type* self = data.GetParameter();
   self->persistent().Reset();
-  delete self;
+  self->Destroy();
 }
 
 

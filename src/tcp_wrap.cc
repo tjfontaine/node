@@ -56,6 +56,8 @@ using v8::Boolean;
 
 class TCPConnectWrap : public ReqWrap<uv_connect_t> {
  public:
+  NODE_UMC_ALLOCATE(TCPConnectWrap);
+  NODE_UMC_DESTROYV(TCPConnectWrap);
   TCPConnectWrap(Environment* env, Local<Object> req_wrap_obj);
 };
 
@@ -176,10 +178,10 @@ void TCPWrap::New(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args.GetIsolate());
   TCPWrap* wrap;
   if (args.Length() == 0) {
-    wrap = new TCPWrap(env, args.This(), NULL);
+    wrap = TCPWrap::Allocate(env, args.This(), NULL);
   } else if (args[0]->IsExternal()) {
     void* ptr = args[0].As<External>()->Value();
-    wrap = new TCPWrap(env, args.This(), static_cast<AsyncWrap*>(ptr));
+    wrap = TCPWrap::Allocate(env, args.This(), static_cast<AsyncWrap*>(ptr));
   } else {
     UNREACHABLE();
   }
@@ -416,7 +418,7 @@ void TCPWrap::AfterConnect(uv_connect_t* req, int status) {
 
   req_wrap->MakeCallback(env->oncomplete_string(), ARRAY_SIZE(argv), argv);
 
-  delete req_wrap;
+  req_wrap->Destroy();
 }
 
 
@@ -438,14 +440,14 @@ void TCPWrap::Connect(const FunctionCallbackInfo<Value>& args) {
   int err = uv_ip4_addr(*ip_address, port, &addr);
 
   if (err == 0) {
-    TCPConnectWrap* req_wrap = new TCPConnectWrap(env, req_wrap_obj);
+    TCPConnectWrap* req_wrap = TCPConnectWrap::Allocate(env, req_wrap_obj);
     err = uv_tcp_connect(&req_wrap->req_,
                          &wrap->handle_,
                          reinterpret_cast<const sockaddr*>(&addr),
                          AfterConnect);
     req_wrap->Dispatched();
     if (err)
-      delete req_wrap;
+      req_wrap->Destroy();
   }
 
   args.GetReturnValue().Set(err);
@@ -470,14 +472,14 @@ void TCPWrap::Connect6(const FunctionCallbackInfo<Value>& args) {
   int err = uv_ip6_addr(*ip_address, port, &addr);
 
   if (err == 0) {
-    TCPConnectWrap* req_wrap = new TCPConnectWrap(env, req_wrap_obj);
+    TCPConnectWrap* req_wrap = TCPConnectWrap::Allocate(env, req_wrap_obj);
     err = uv_tcp_connect(&req_wrap->req_,
                          &wrap->handle_,
                          reinterpret_cast<const sockaddr*>(&addr),
                          AfterConnect);
     req_wrap->Dispatched();
     if (err)
-      delete req_wrap;
+      req_wrap->Destroy();
   }
 
   args.GetReturnValue().Set(err);

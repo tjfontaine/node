@@ -75,6 +75,9 @@ class Connection;
 
 class SecureContext : public BaseObject {
  public:
+  NODE_UMC_ALLOCATE(SecureContext);
+  NODE_UMC_DESTROYV(SecureContext);
+
   ~SecureContext() {
     FreeCTXMem();
   }
@@ -275,6 +278,8 @@ class SSLWrap {
 // assumes that any args.This() called will be the handle from Connection.
 class Connection : public SSLWrap<Connection>, public AsyncWrap {
  public:
+  NODE_UMC_DESTROYV(Connection);
+
   ~Connection() {
 #ifdef SSL_CTRL_SET_TLSEXT_SERVERNAME_CB
     sniObject_.Reset();
@@ -334,6 +339,14 @@ class Connection : public SSLWrap<Connection>, public AsyncWrap {
   void ClearError();
   void SetShutdownFlags();
 
+  static Connection* Allocate(Environment* env,
+                              v8::Local<v8::Object> wrap,
+                              SecureContext* wc,
+                              SSLWrap<Connection>::Kind kind) {
+    NODE_UMC_DOALLOC(Connection);
+    return new(storage) Connection(env, wrap, wc, kind);
+  }
+
   Connection(Environment* env,
              v8::Local<v8::Object> wrap,
              SecureContext* sc,
@@ -365,6 +378,8 @@ class Connection : public SSLWrap<Connection>, public AsyncWrap {
 
 class CipherBase : public BaseObject {
  public:
+  NODE_UMC_DESTROYV(CipherBase);
+
   ~CipherBase() {
     if (!initialised_)
       return;
@@ -406,6 +421,13 @@ class CipherBase : public BaseObject {
   static void SetAuthTag(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void SetAAD(const v8::FunctionCallbackInfo<v8::Value>& args);
 
+  static CipherBase* Allocate(Environment* env,
+                              v8::Local<v8::Object> wrap,
+                              CipherKind kind) {
+    NODE_UMC_DOALLOC(CipherBase);
+    return new(storage) CipherBase(env, wrap, kind);
+  }
+
   CipherBase(Environment* env,
              v8::Local<v8::Object> wrap,
              CipherKind kind)
@@ -429,6 +451,9 @@ class CipherBase : public BaseObject {
 
 class Hmac : public BaseObject {
  public:
+  NODE_UMC_ALLOCATE(Hmac);
+  NODE_UMC_DESTROYV(Hmac);
+
   ~Hmac() {
     if (!initialised_)
       return;
@@ -462,6 +487,9 @@ class Hmac : public BaseObject {
 
 class Hash : public BaseObject {
  public:
+  NODE_UMC_ALLOCATE(Hash);
+  NODE_UMC_DESTROYV(Hash);
+
   ~Hash() {
     if (!initialised_)
       return;
@@ -525,6 +553,8 @@ class SignBase : public BaseObject {
 
 class Sign : public SignBase {
  public:
+  NODE_UMC_ALLOCATE(Sign);
+  NODE_UMC_DESTROYV(Sign);
 
   static void Initialize(Environment* env, v8::Handle<v8::Object> target);
 
@@ -549,6 +579,8 @@ class Sign : public SignBase {
 
 class Verify : public SignBase {
  public:
+  NODE_UMC_ALLOCATE(Verify);
+  NODE_UMC_DESTROYV(Verify);
   static void Initialize(Environment* env, v8::Handle<v8::Object> target);
 
   Error VerifyInit(const char* verify_type);
@@ -602,6 +634,9 @@ class PublicKeyCipher {
 
 class DiffieHellman : public BaseObject {
  public:
+  NODE_UMC_ALLOCATE(DiffieHellman);
+  NODE_UMC_DESTROYV(DiffieHellman);
+
   ~DiffieHellman() {
     if (dh != NULL) {
       DH_free(dh);
@@ -648,6 +683,8 @@ class DiffieHellman : public BaseObject {
 
 class ECDH : public BaseObject {
  public:
+  NODE_UMC_DESTROYV(ECDH);
+
   ~ECDH() {
     if (key_ != NULL)
       EC_KEY_free(key_);
@@ -658,6 +695,13 @@ class ECDH : public BaseObject {
   static void Initialize(Environment* env, v8::Handle<v8::Object> target);
 
  protected:
+  static ECDH* Allocate(Environment* env,
+                        v8::Local<v8::Object> wrap,
+                        EC_KEY* key) {
+    NODE_UMC_DOALLOC(ECDH);
+    return new(storage) ECDH(env, wrap, key);
+  }
+
   ECDH(Environment* env, v8::Local<v8::Object> wrap, EC_KEY* key)
       : BaseObject(env, wrap),
         generated_(false),
@@ -691,11 +735,15 @@ class Certificate : public AsyncWrap {
   const char* ExportPublicKey(const char* data, int len);
   const char* ExportChallenge(const char* data, int len);
 
+  NODE_UMC_DESTROYV(Certificate);
+
  protected:
   static void New(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void VerifySpkac(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void ExportPublicKey(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void ExportChallenge(const v8::FunctionCallbackInfo<v8::Value>& args);
+
+  NODE_UMC_ALLOCATE(Certificate);
 
   Certificate(Environment* env, v8::Local<v8::Object> wrap)
       : AsyncWrap(env, wrap, AsyncWrap::PROVIDER_CRYPTO) {

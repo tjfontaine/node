@@ -25,6 +25,7 @@
 #include "node_wrap.h"
 #include "util.h"
 #include "util-inl.h"
+#include "allocator.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -47,6 +48,9 @@ using v8::Value;
 
 class ProcessWrap : public HandleWrap {
  public:
+  NODE_UMC_ALLOCATE(ProcessWrap);
+  NODE_UMC_DESTROYV(ProcessWrap);
+
   static void Initialize(Handle<Object> target,
                          Handle<Value> unused,
                          Handle<Context> context) {
@@ -76,7 +80,7 @@ class ProcessWrap : public HandleWrap {
     assert(args.IsConstructCall());
     HandleScope handle_scope(args.GetIsolate());
     Environment* env = Environment::GetCurrent(args.GetIsolate());
-    new ProcessWrap(env, args.This());
+    ProcessWrap::Allocate(env, args.This());
   }
 
   ProcessWrap(Environment* env, Handle<Object> object)

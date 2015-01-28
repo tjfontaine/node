@@ -78,6 +78,10 @@ class ContextifyContext {
   int references_;
 
  public:
+  NODE_UMC_NEWOP;
+  NODE_UMC_ALLOCATE(ContextifyContext);
+  NODE_UMC_DESTROYV(ContextifyContext);
+
   explicit ContextifyContext(Environment* env, Local<Object> sandbox)
       : env_(env),
         sandbox_(env->isolate(), sandbox),
@@ -281,7 +285,7 @@ class ContextifyContext {
     assert(sandbox->GetHiddenValue(hidden_name).IsEmpty());
 
     TryCatch try_catch;
-    ContextifyContext* context = new ContextifyContext(env, sandbox);
+    ContextifyContext* context = ContextifyContext::Allocate(env, sandbox);
 
     if (try_catch.HasCaught()) {
       try_catch.ReThrow();
@@ -324,7 +328,7 @@ class ContextifyContext {
       context->proxy_global_.ClearWeak();
 
     if (--context->references_ == 0)
-      delete context;
+      context->Destroy();
   }
 
 
@@ -451,6 +455,9 @@ class ContextifyScript : public BaseObject {
   Persistent<UnboundScript> script_;
 
  public:
+  NODE_UMC_ALLOCATE(ContextifyScript);
+  NODE_UMC_DESTROYV(ContextifyScript);
+
   static void Init(Environment* env, Local<Object> target) {
     HandleScope scope(env->isolate());
     Local<String> class_name =
@@ -480,7 +487,7 @@ class ContextifyScript : public BaseObject {
     }
 
     ContextifyScript* contextify_script =
-        new ContextifyScript(env, args.This());
+        ContextifyScript::Allocate(env, args.This());
 
     TryCatch try_catch;
     Local<String> code = args[0]->ToString();

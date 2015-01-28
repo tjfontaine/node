@@ -209,6 +209,26 @@ parser.add_option('--shared-zlib-libpath',
     dest='shared_zlib_libpath',
     help='a directory to search for the shared zlib DLL')
 
+parser.add_option('--shared-umem',
+    action='store_true',
+    dest='shared_umem',
+    help='link against libumem')
+
+parser.add_option('--shared-umem-libname',
+    action='store',
+    dest='shared_umem_libname',
+    help='alternative lib name to link to (default: \'umem\')')
+
+parser.add_option('--shared-umem-libpath',
+    action='store',
+    dest='shared_umem_libpath',
+    help='a directory to search for the shared umem dynamic library')
+
+parser.add_option('--shared-umem-includes',
+    action='store',
+    dest='shared_umem_includes',
+    help='directory containing libumem header files')
+
 # TODO document when we've decided on what the tracing API and its options will
 # look like
 parser.add_option('--systemtap-includes',
@@ -584,6 +604,23 @@ def configure_node(o):
 
   if options.v8_options:
     o['variables']['node_v8_options'] = options.v8_options.replace('"', '\\"')
+
+
+def configure_umem(o):
+  if flavor == 'solaris' or options.shared_umem:
+    o['variables']['node_has_umem'] = 'true'
+
+    libname = 'umem'
+
+    if options.shared_umem_libname:
+      libname = options.shared_umem_libname
+
+    o['libraries'] += ['-l%s' % libname]
+
+    if options.shared_umem_libpath:
+      o['libraries'] += ['-L%s' % options.shared_umem_libpath]
+    if options.shared_umem_includes:
+      o['include_dirs'] += [options.shared_umem_includes]
 
 
 def configure_libz(o):
@@ -999,6 +1036,7 @@ configure_openssl(output)
 configure_winsdk(output)
 configure_intl(output)
 configure_fullystatic(output)
+configure_umem(output)
 
 # variables should be a root level element,
 # move everything else to target_defaults

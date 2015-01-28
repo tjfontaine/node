@@ -69,6 +69,8 @@ using v8::Value;
 class GetAddrInfoReqWrap : public ReqWrap<uv_getaddrinfo_t> {
  public:
   GetAddrInfoReqWrap(Environment* env, Local<Object> req_wrap_obj);
+  NODE_UMC_ALLOCATE(GetAddrInfoReqWrap);
+  NODE_UMC_DESTROYV(GetAddrInfoReqWrap);
 };
 
 GetAddrInfoReqWrap::GetAddrInfoReqWrap(Environment* env,
@@ -88,6 +90,8 @@ static void NewGetAddrInfoReqWrap(const FunctionCallbackInfo<Value>& args) {
 class GetNameInfoReqWrap : public ReqWrap<uv_getnameinfo_t> {
   public:
     GetNameInfoReqWrap(Environment* env, Local<Object> req_wrap_obj);
+    NODE_UMC_ALLOCATE(GetNameInfoReqWrap);
+    NODE_UMC_DESTROYV(GetNameInfoReqWrap);
 };
 
 GetNameInfoReqWrap::GetNameInfoReqWrap(Environment* env,
@@ -264,6 +268,8 @@ static Local<Array> HostentToNames(Environment* env, struct hostent* host) {
 
 class QueryWrap : public AsyncWrap {
  public:
+  virtual void Destroy() = 0;
+
   QueryWrap(Environment* env, Local<Object> req_wrap_obj)
       : AsyncWrap(env, req_wrap_obj, AsyncWrap::PROVIDER_QUERYWRAP) {
     if (env->in_domain())
@@ -301,7 +307,7 @@ class QueryWrap : public AsyncWrap {
       wrap->Parse(answer_buf, answer_len);
     }
 
-    delete wrap;
+    wrap->Destroy();
   }
 
   static void Callback(void *arg, int status, int timeouts,
@@ -314,7 +320,7 @@ class QueryWrap : public AsyncWrap {
       wrap->Parse(host);
     }
 
-    delete wrap;
+    wrap->Destroy();
   }
 
   void CallOnComplete(Local<Value> answer) {
@@ -393,6 +399,9 @@ class QueryWrap : public AsyncWrap {
 
 class QueryAWrap: public QueryWrap {
  public:
+  NODE_UMC_ALLOCATE(QueryAWrap);
+  NODE_UMC_DESTROYV(QueryAWrap);
+
   QueryAWrap(Environment* env, Local<Object> req_wrap_obj)
       : QueryWrap(env, req_wrap_obj) {
   }
@@ -430,6 +439,9 @@ class QueryAWrap: public QueryWrap {
 
 class QueryAaaaWrap: public QueryWrap {
  public:
+  NODE_UMC_ALLOCATE(QueryAaaaWrap);
+  NODE_UMC_DESTROYV(QueryAaaaWrap);
+
   QueryAaaaWrap(Environment* env, Local<Object> req_wrap_obj)
       : QueryWrap(env, req_wrap_obj) {
   }
@@ -467,6 +479,9 @@ class QueryAaaaWrap: public QueryWrap {
 
 class QueryCnameWrap: public QueryWrap {
  public:
+  NODE_UMC_ALLOCATE(QueryCnameWrap);
+  NODE_UMC_DESTROYV(QueryCnameWrap);
+
   QueryCnameWrap(Environment* env, Local<Object> req_wrap_obj)
       : QueryWrap(env, req_wrap_obj) {
   }
@@ -506,6 +521,9 @@ class QueryCnameWrap: public QueryWrap {
 
 class QueryMxWrap: public QueryWrap {
  public:
+  NODE_UMC_ALLOCATE(QueryMxWrap);
+  NODE_UMC_DESTROYV(QueryMxWrap);
+
   QueryMxWrap(Environment* env, Local<Object> req_wrap_obj)
       : QueryWrap(env, req_wrap_obj) {
   }
@@ -555,6 +573,9 @@ class QueryMxWrap: public QueryWrap {
 
 class QueryNsWrap: public QueryWrap {
  public:
+  NODE_UMC_ALLOCATE(QueryNsWrap);
+  NODE_UMC_DESTROYV(QueryNsWrap);
+
   QueryNsWrap(Environment* env, Local<Object> req_wrap_obj)
       : QueryWrap(env, req_wrap_obj) {
   }
@@ -591,6 +612,9 @@ class QueryNsWrap: public QueryWrap {
 
 class QueryTxtWrap: public QueryWrap {
  public:
+  NODE_UMC_ALLOCATE(QueryTxtWrap);
+  NODE_UMC_DESTROYV(QueryTxtWrap);
+
   QueryTxtWrap(Environment* env, Local<Object> req_wrap_obj)
       : QueryWrap(env, req_wrap_obj) {
   }
@@ -645,6 +669,9 @@ class QueryTxtWrap: public QueryWrap {
 
 class QuerySrvWrap: public QueryWrap {
  public:
+  NODE_UMC_ALLOCATE(QuerySrvWrap);
+  NODE_UMC_DESTROYV(QuerySrvWrap);
+
   explicit QuerySrvWrap(Environment* env, Local<Object> req_wrap_obj)
       : QueryWrap(env, req_wrap_obj) {
   }
@@ -699,6 +726,9 @@ class QuerySrvWrap: public QueryWrap {
 
 class QueryNaptrWrap: public QueryWrap {
  public:
+  NODE_UMC_ALLOCATE(QueryNaptrWrap);
+  NODE_UMC_DESTROYV(QueryNaptrWrap);
+
   explicit QueryNaptrWrap(Environment* env, Local<Object> req_wrap_obj)
       : QueryWrap(env, req_wrap_obj) {
   }
@@ -761,6 +791,9 @@ class QueryNaptrWrap: public QueryWrap {
 
 class QuerySoaWrap: public QueryWrap {
  public:
+  NODE_UMC_ALLOCATE(QuerySoaWrap);
+  NODE_UMC_DESTROYV(QuerySoaWrap);
+
   QuerySoaWrap(Environment* env, Local<Object> req_wrap_obj)
       : QueryWrap(env, req_wrap_obj) {
   }
@@ -814,6 +847,9 @@ class QuerySoaWrap: public QueryWrap {
 
 class GetHostByAddrWrap: public QueryWrap {
  public:
+  NODE_UMC_ALLOCATE(GetHostByAddrWrap);
+  NODE_UMC_DESTROYV(GetHostByAddrWrap);
+
   explicit GetHostByAddrWrap(Environment* env, Local<Object> req_wrap_obj)
       : QueryWrap(env, req_wrap_obj) {
   }
@@ -888,12 +924,12 @@ static void Query(const FunctionCallbackInfo<Value>& args) {
 
   Local<Object> req_wrap_obj = args[0].As<Object>();
   Local<String> string = args[1].As<String>();
-  Wrap* wrap = new Wrap(env, req_wrap_obj);
+  Wrap* wrap = Wrap::Allocate(env, req_wrap_obj);
 
   node::Utf8Value name(string);
   int err = wrap->Send(*name);
   if (err)
-    delete wrap;
+    wrap->Destroy();
 
   args.GetReturnValue().Set(err);
 }
@@ -993,7 +1029,7 @@ void AfterGetAddrInfo(uv_getaddrinfo_t* req, int status, struct addrinfo* res) {
   // Make the callback into JavaScript
   req_wrap->MakeCallback(env->oncomplete_string(), ARRAY_SIZE(argv), argv);
 
-  delete req_wrap;
+  req_wrap->Destroy();
 }
 
 
@@ -1024,7 +1060,7 @@ void AfterGetNameInfo(uv_getnameinfo_t* req,
   // Make the callback into JavaScript
   req_wrap->MakeCallback(env->oncomplete_string(), ARRAY_SIZE(argv), argv);
 
-  delete req_wrap;
+  req_wrap->Destroy();
 }
 
 
@@ -1073,7 +1109,8 @@ static void GetAddrInfo(const FunctionCallbackInfo<Value>& args) {
     abort();
   }
 
-  GetAddrInfoReqWrap* req_wrap = new GetAddrInfoReqWrap(env, req_wrap_obj);
+  GetAddrInfoReqWrap* req_wrap =
+    GetAddrInfoReqWrap::Allocate(env, req_wrap_obj);
 
   struct addrinfo hints;
   memset(&hints, 0, sizeof(struct addrinfo));
@@ -1089,7 +1126,7 @@ static void GetAddrInfo(const FunctionCallbackInfo<Value>& args) {
                            &hints);
   req_wrap->Dispatched();
   if (err)
-    delete req_wrap;
+    req_wrap->Destroy();
 
   args.GetReturnValue().Set(err);
 }
@@ -1110,7 +1147,8 @@ static void GetNameInfo(const FunctionCallbackInfo<Value>& args) {
   CHECK(uv_ip4_addr(*ip, port, reinterpret_cast<sockaddr_in*>(&addr)) == 0 ||
         uv_ip6_addr(*ip, port, reinterpret_cast<sockaddr_in6*>(&addr)) == 0);
 
-  GetNameInfoReqWrap* req_wrap = new GetNameInfoReqWrap(env, req_wrap_obj);
+  GetNameInfoReqWrap* req_wrap =
+    GetNameInfoReqWrap::Allocate(env, req_wrap_obj);
 
   int err = uv_getnameinfo(env->event_loop(),
                            &req_wrap->req_,
@@ -1119,7 +1157,7 @@ static void GetNameInfo(const FunctionCallbackInfo<Value>& args) {
                            NI_NAMEREQD);
   req_wrap->Dispatched();
   if (err)
-    delete req_wrap;
+    req_wrap->Destroy();
 
   args.GetReturnValue().Set(err);
 }

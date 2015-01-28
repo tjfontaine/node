@@ -233,7 +233,6 @@ void StreamWrap::WriteBuffer(const FunctionCallbackInfo<Value>& args) {
 
   size_t length = Buffer::Length(buf_obj);
 
-  char* storage;
   WriteWrap* req_wrap;
   uv_buf_t buf;
   WriteBuffer(buf_obj, &buf);
@@ -249,8 +248,7 @@ void StreamWrap::WriteBuffer(const FunctionCallbackInfo<Value>& args) {
   assert(count == 1);
 
   // Allocate, or write rest
-  storage = new char[sizeof(WriteWrap)];
-  req_wrap = new(storage) WriteWrap(env, req_wrap_obj, wrap);
+  req_wrap = WriteWrap::Allocate(0, env, req_wrap_obj, wrap);
 
   err = wrap->callbacks()->DoWrite(req_wrap,
                                    bufs,
@@ -260,10 +258,8 @@ void StreamWrap::WriteBuffer(const FunctionCallbackInfo<Value>& args) {
   req_wrap->Dispatched();
   req_wrap_obj->Set(env->async(), True(env->isolate()));
 
-  if (err) {
-    req_wrap->~WriteWrap();
-    delete[] storage;
-  }
+  if (err)
+    req_wrap->Destroy();
 
  done:
   const char* msg = wrap->callbacks()->Error();
@@ -304,7 +300,6 @@ void StreamWrap::WriteStringImpl(const FunctionCallbackInfo<Value>& args) {
   }
 
   // Try writing immediately if write size isn't too big
-  char* storage;
   WriteWrap* req_wrap;
   char* data;
   char stack_storage[16384];  // 16kb
@@ -337,11 +332,10 @@ void StreamWrap::WriteStringImpl(const FunctionCallbackInfo<Value>& args) {
     assert(count == 1);
   }
 
-  storage = new char[sizeof(WriteWrap) + storage_size + 15];
-  req_wrap = new(storage) WriteWrap(env, req_wrap_obj, wrap);
+  req_wrap = WriteWrap::Allocate(storage_size + 15, env, req_wrap_obj, wrap);
 
   data = reinterpret_cast<char*>(ROUND_UP(
-      reinterpret_cast<uintptr_t>(storage) + sizeof(WriteWrap), 16));
+      reinterpret_cast<uintptr_t>(req_wrap) + sizeof(WriteWrap), 16));
 
   if (try_write) {
     // Copy partial data
@@ -390,10 +384,8 @@ void StreamWrap::WriteStringImpl(const FunctionCallbackInfo<Value>& args) {
   req_wrap->Dispatched();
   req_wrap->object()->Set(env->async(), True(env->isolate()));
 
-  if (err) {
-    req_wrap->~WriteWrap();
-    delete[] storage;
-  }
+  if (err)
+    req_wrap->Destroy();
 
  done:
   const char* msg = wrap->callbacks()->Error();
@@ -452,9 +444,8 @@ void StreamWrap::Writev(const FunctionCallbackInfo<Value>& args) {
     bufs = new uv_buf_t[count];
 
   storage_size += sizeof(WriteWrap);
-  char* storage = new char[storage_size];
   WriteWrap* req_wrap =
-      new(storage) WriteWrap(env, req_wrap_obj, wrap);
+      WriteWrap::Allocate(storage_size, env, req_wrap_obj, wrap);
 
   uint32_t bytes = 0;
   size_t offset = sizeof(WriteWrap);
@@ -472,6 +463,7 @@ void StreamWrap::Writev(const FunctionCallbackInfo<Value>& args) {
     // Write string
     offset = ROUND_UP(offset, 16);
     assert(offset < storage_size);
+    char* storage = reinterpret_cast<char*>(req_wrap);
     char* str_storage = storage + offset;
     size_t str_size = storage_size - offset;
 
@@ -507,10 +499,8 @@ void StreamWrap::Writev(const FunctionCallbackInfo<Value>& args) {
   if (msg != NULL)
     req_wrap_obj->Set(env->error_string(), OneByteString(env->isolate(), msg));
 
-  if (err) {
-    req_wrap->~WriteWrap();
-    delete[] storage;
-  }
+  if (err)
+    req_wrap->Destroy();
 
   args.GetReturnValue().Set(err);
 }
@@ -576,8 +566,8 @@ void StreamWrap::AfterWrite(uv_write_t* req, int status) {
 
   req_wrap->MakeCallback(env->oncomplete_string(), ARRAY_SIZE(argv), argv);
 
-  req_wrap->~WriteWrap();
-  delete[] reinterpret_cast<char*>(req_wrap);
+  // XXX TODO could be oversized?
+  req_wrap->Destroy();
 }
 
 
@@ -590,11 +580,11 @@ void StreamWrap::Shutdown(const FunctionCallbackInfo<Value>& args) {
   assert(args[0]->IsObject());
   Local<Object> req_wrap_obj = args[0].As<Object>();
 
-  ShutdownWrap* req_wrap = new ShutdownWrap(env, req_wrap_obj);
+  ShutdownWrap* req_wrap = ShutdownWrap::Allocate(env, req_wrap_obj);
   int err = wrap->callbacks()->DoShutdown(req_wrap, AfterShutdown);
   req_wrap->Dispatched();
   if (err)
-    delete req_wrap;
+    req_wrap->Destroy();
   args.GetReturnValue().Set(err);
 }
 
@@ -620,7 +610,7 @@ void StreamWrap::AfterShutdown(uv_shutdown_t* req, int status) {
 
   req_wrap->MakeCallback(env->oncomplete_string(), ARRAY_SIZE(argv), argv);
 
-  delete req_wrap;
+  req_wrap->Destroy();
 }
 
 

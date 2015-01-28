@@ -129,7 +129,7 @@ void HandleWrap::OnClose(uv_handle_t* handle) {
 
   object->SetAlignedPointerInInternalField(0, NULL);
   wrap->persistent().Reset();
-  delete wrap;
+  wrap->Destroy();
 }
 
 

@@ -30,6 +30,16 @@ namespace node {
 
 class TTYWrap : public StreamWrap {
  public:
+  NODE_UMC_DESTROYV(TTYWrap);
+
+  static TTYWrap* Allocate(Environment* env,
+                           v8::Handle<v8::Object> obj,
+                           int fd,
+                           bool readable) {
+    NODE_UMC_DOALLOC(TTYWrap);
+    return new(storage) TTYWrap(env, obj, fd, readable);
+  }
+
   static void Initialize(v8::Handle<v8::Object> target,
                          v8::Handle<v8::Value> unused,
                          v8::Handle<v8::Context> context);

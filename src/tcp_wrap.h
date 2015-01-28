@@ -30,6 +30,9 @@ namespace node {
 
 class TCPWrap : public StreamWrap {
  public:
+  NODE_UMC_ALLOCATE_AW(TCPWrap);
+  NODE_UMC_DESTROYV(TCPWrap);
+
   static v8::Local<v8::Object> Instantiate(Environment* env, AsyncWrap* parent);
   static void Initialize(v8::Handle<v8::Object> target,
                          v8::Handle<v8::Value> unused,

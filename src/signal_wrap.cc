@@ -43,6 +43,9 @@ using v8::Value;
 
 class SignalWrap : public HandleWrap {
  public:
+  NODE_UMC_ALLOCATE(SignalWrap);
+  NODE_UMC_DESTROYV(SignalWrap);
+
   static void Initialize(Handle<Object> target,
                          Handle<Value> unused,
                          Handle<Context> context) {
@@ -70,7 +73,7 @@ class SignalWrap : public HandleWrap {
     assert(args.IsConstructCall());
     HandleScope handle_scope(args.GetIsolate());
     Environment* env = Environment::GetCurrent(args.GetIsolate());
-    new SignalWrap(env, args.This());
+    SignalWrap::Allocate(env, args.This());
   }
 
   SignalWrap(Environment* env, Handle<Object> object)

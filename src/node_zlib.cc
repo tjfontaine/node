@@ -72,6 +72,14 @@ void InitZlib(v8::Handle<v8::Object> target);
  */
 class ZCtx : public AsyncWrap {
  public:
+  NODE_UMC_DESTROYV(ZCtx);
+
+  static ZCtx* Allocate(Environment* env,
+                        Local<Object> wrap,
+                        node_zlib_mode mode) {
+    NODE_UMC_DOALLOC(ZCtx);
+    return new(storage) ZCtx(env, wrap, mode);
+  }
 
   ZCtx(Environment* env, Local<Object> wrap, node_zlib_mode mode)
       : AsyncWrap(env, wrap, AsyncWrap::PROVIDER_ZLIB),
@@ -383,7 +391,7 @@ class ZCtx : public AsyncWrap {
       return env->ThrowTypeError("Bad argument");
     }
 
-    new ZCtx(env, args.This(), mode);
+    ZCtx::Allocate(env, args.This(), mode);
   }
 
   // just pull the ints out of the args and call the other Init

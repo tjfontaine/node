@@ -57,6 +57,15 @@
 #include "v8-profiler.h"
 #include "zlib.h"
 
+#if defined(NODE_HAVE_LIBUMEM)
+#include "allocator_umem.h"
+Allocator *ALLOCATOR = new UmemCache();
+#else
+#include "allocator.h"
+Allocator *ALLOCATOR = new Allocator();
+#endif
+
+
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>  // PATH_MAX
@@ -91,6 +100,7 @@ typedef int mode_t;
 #elif !defined(_MSC_VER)
 extern char **environ;
 #endif
+
 
 namespace node {
 

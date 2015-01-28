@@ -56,6 +56,9 @@ using v8::Value;
 // TODO(bnoordhuis) share with TCPWrap?
 class PipeConnectWrap : public ReqWrap<uv_connect_t> {
  public:
+  NODE_UMC_ALLOCATE(PipeConnectWrap);
+  NODE_UMC_DESTROYV(PipeConnectWrap);
+
   PipeConnectWrap(Environment* env, Local<Object> req_wrap_obj);
 };
 
@@ -156,9 +159,9 @@ void PipeWrap::New(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args.GetIsolate());
   if (args[0]->IsExternal()) {
     void* ptr = args[0].As<External>()->Value();
-    new PipeWrap(env, args.This(), false, static_cast<AsyncWrap*>(ptr));
+    PipeWrap::Allocate(env, args.This(), false, static_cast<AsyncWrap*>(ptr));
   } else {
-    new PipeWrap(env, args.This(), args[0]->IsTrue(), NULL);
+    PipeWrap::Allocate(env, args.This(), args[0]->IsTrue(), NULL);
   }
 }
 
@@ -290,7 +293,7 @@ void PipeWrap::AfterConnect(uv_connect_t* req, int status) {
 
   req_wrap->MakeCallback(env->oncomplete_string(), ARRAY_SIZE(argv), argv);
 
-  delete req_wrap;
+  req_wrap->Destroy();
 }
 
 
@@ -321,7 +324,7 @@ void PipeWrap::Connect(const FunctionCallbackInfo<Value>& args) {
   Local<Object> req_wrap_obj = args[0].As<Object>();
   node::Utf8Value name(args[1]);
 
-  PipeConnectWrap* req_wrap = new PipeConnectWrap(env, req_wrap_obj);
+  PipeConnectWrap* req_wrap = PipeConnectWrap::Allocate(env, req_wrap_obj);
   uv_pipe_connect(&req_wrap->req_,
                   &wrap->handle_,
                   *name,

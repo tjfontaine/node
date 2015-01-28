@@ -68,8 +68,32 @@ using v8::Value;
 
 class FSReqWrap: public ReqWrap<uv_fs_t> {
  public:
-  void* operator new(size_t size) { return new char[size]; }
-  void* operator new(size_t size, char* storage) { return storage; }
+  Allocator::UMC_TYPES umc_type_;
+
+  virtual void Destroy() {
+    Allocator::UMC_TYPES tid = this->umc_type_;
+    this->~FSReqWrap();
+    ALLOCATOR->Destroy(tid, this);
+  }
+
+  static FSReqWrap* Allocate(size_t dest_len,
+                             Environment* env,
+                             Local<Object> holder,
+                             const char* syscall,
+                             char* data = NULL) {
+    Allocator::UMC_TYPES tid = dest_len > 0 ?
+      Allocator::UMC_TYPE_FSReqWrapOver : Allocator::UMC_TYPE_FSReqWrap;
+
+    assert(dest_len < PATH_MAX);
+
+    void* storage = ALLOCATOR->Allocate(tid, sizeof(FSReqWrap), dest_len);
+
+    FSReqWrap* ret = new(storage) FSReqWrap(env, holder, syscall, data);
+
+    ret->umc_type_ = tid;
+
+    return ret;
+  }
 
   FSReqWrap(Environment* env,
             Local<Object> req,
@@ -254,7 +278,7 @@ static void After(uv_fs_t *req) {
   req_wrap->MakeCallback(env->oncomplete_string(), argc, argv);
 
   uv_fs_req_cleanup(&req_wrap->req_);
-  delete req_wrap;
+  req_wrap->Destroy();
 }
 
 // This struct is only used on sync fs calls.
@@ -274,9 +298,8 @@ struct fs_req_wrap {
   FSReqWrap* req_wrap;                                                        \
   char* dest_str = (dest_path);                                               \
   int dest_len = dest_str == NULL ? 0 : strlen(dest_str);                     \
-  char* storage = new char[sizeof(*req_wrap) + dest_len];                     \
   CHECK(req->IsObject());                                                     \
-  req_wrap = new(storage) FSReqWrap(env, req.As<Object>(), #func);            \
+  req_wrap = FSReqWrap::Allocate(dest_len, env, req.As<Object>(), #func);     \
   req_wrap->dest_len(dest_len);                                               \
   if (dest_str != NULL) {                                                     \
     memcpy(const_cast<char*>(req_wrap->dest()),                               \
@@ -900,7 +923,11 @@ static void WriteString(const FunctionCallbackInfo<Value>& args) {
   }
 
   FSReqWrap* req_wrap =
-      new FSReqWrap(env, req.As<Object>(), "write", must_free ? buf : NULL);
+      FSReqWrap::Allocate(0,
+                          env,
+                          req.As<Object>(),
+                          "write",
+                          must_free ? buf : NULL);
   int err = uv_fs_write(env->event_loop(),
                         &req_wrap->req_,
                         fd,

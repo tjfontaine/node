@@ -14,6 +14,7 @@
     'node_shared_openssl%': 'false',
     'node_use_mdb%': 'false',
     'node_v8_options%': '',
+    'node_has_umem%': 'false',
     'library_files': [
       'src/node.js',
       'lib/_debugger.js',
@@ -88,6 +89,7 @@
       ],
 
       'sources': [
+        'src/allocator.cc',
         'src/async-wrap.cc',
         'src/fs_event_wrap.cc',
         'src/cares_wrap.cc',
@@ -119,6 +121,7 @@
         'src/udp_wrap.cc',
         'src/uv.cc',
         # headers to make for a more pleasant IDE experience
+        'src/allocator.h',
         'src/async-wrap.h',
         'src/async-wrap-inl.h',
         'src/base-object.h',
@@ -316,6 +319,14 @@
           'dependencies': [ 'deps/http_parser/http_parser.gyp:http_parser' ],
         }],
 
+        [ 'node_has_umem=="true"', {
+          'defines': [ 'NODE_HAVE_LIBUMEM=1' ],
+          'sources': [
+            'src/allocator_umem.cc',
+            'src/allocator_umem.h',
+          ],
+        }],
+
         [ 'node_shared_cares=="false"', {
           'dependencies': [ 'deps/cares/cares.gyp:cares' ],
         }],
@@ -359,7 +370,6 @@
         [ 'OS=="solaris"', {
           'libraries': [
             '-lkstat',
-            '-lumem',
           ],
           'defines!': [
             'PLATFORM="solaris"',

@@ -35,6 +35,9 @@ class StreamWrap;
 
 class ShutdownWrap : public ReqWrap<uv_shutdown_t> {
  public:
+  NODE_UMC_ALLOCATE(ShutdownWrap);
+  NODE_UMC_DESTROYV(ShutdownWrap);
+
   ShutdownWrap(Environment* env, v8::Local<v8::Object> req_wrap_obj)
       : ReqWrap<uv_shutdown_t>(env,
                                req_wrap_obj,
@@ -49,6 +52,42 @@ class ShutdownWrap : public ReqWrap<uv_shutdown_t> {
 
 class WriteWrap: public ReqWrap<uv_write_t> {
  public:
+  virtual void Destroy() {
+    Allocator::UMC_TYPES tid = this->umc_type_;
+    this->~WriteWrap();
+    ALLOCATOR->Destroy(tid, this);
+  }
+
+  Allocator::UMC_TYPES umc_type_;
+
+  static WriteWrap* Allocate(size_t dest,
+                             Environment* env,
+                             v8::Local<v8::Object> obj,
+                             StreamWrap* wrap) {
+    Allocator::UMC_TYPES tid = dest > 0 ?
+      Allocator::UMC_TYPE_WriteWrapOver : Allocator::UMC_TYPE_WriteWrap;
+
+    void* storage = NULL;
+
+    if (dest > sizeof(WriteWrap) + 16 + 16384) {
+      tid = Allocator::UMC_TYPE_Oversize;
+    } else if (dest > 0) {
+      tid = Allocator::UMC_TYPE_WriteWrapOver;
+    } else {
+      tid = Allocator::UMC_TYPE_WriteWrap;
+    }
+
+    storage = ALLOCATOR->Allocate(tid, sizeof(WriteWrap), dest);
+
+    assert(storage != NULL);
+
+    WriteWrap* ret = new(storage) WriteWrap(env, obj, wrap);
+
+    ret->umc_type_ = tid;
+
+    return ret;
+  }
+
   // TODO(trevnorris): WrapWrap inherits from ReqWrap, which I've globbed
   // into the same provider. How should these be broken apart?
   WriteWrap(Environment* env, v8::Local<v8::Object> obj, StreamWrap* wrap)
@@ -56,12 +95,6 @@ class WriteWrap: public ReqWrap<uv_write_t> {
         wrap_(wrap) {
     Wrap(obj, this);
   }
-
-  void* operator new(size_t size, char* storage) { return storage; }
-
-  // This is just to keep the compiler happy. It should never be called, since
-  // we don't use exceptions in node.
-  void operator delete(void* ptr, char* storage) { assert(0); }
 
   inline StreamWrap* wrap() const {
     return wrap_;
@@ -72,11 +105,6 @@ class WriteWrap: public ReqWrap<uv_write_t> {
   }
 
  private:
-  // People should not be using the non-placement new and delete operator on a
-  // WriteWrap. Ensure this never happens.
-  void* operator new(size_t size) { assert(0); }
-  void operator delete(void* ptr) { assert(0); }
-
   StreamWrap* const wrap_;
 };
 
@@ -122,6 +150,8 @@ class StreamWrapCallbacks {
 
 class StreamWrap : public HandleWrap {
  public:
+  NODE_UMC_DESTROYV(StreamWrap);
+
   static void Initialize(v8::Handle<v8::Object> target,
                          v8::Handle<v8::Value> unused,
                          v8::Handle<v8::Context> context);
@@ -175,6 +205,15 @@ class StreamWrap : public HandleWrap {
 
  protected:
   static size_t WriteBuffer(v8::Handle<v8::Value> val, uv_buf_t* buf);
+
+  static StreamWrap* Allocate(Environment* env,
+             v8::Local<v8::Object> object,
+             uv_stream_t* stream,
+             AsyncWrap::ProviderType provider,
+             AsyncWrap* parent = NULL) {
+    NODE_UMC_DOALLOC(StreamWrap);
+    return new(storage) StreamWrap(env, object, stream, provider, parent);
+  }
 
   StreamWrap(Environment* env,
              v8::Local<v8::Object> object,

@@ -103,7 +103,7 @@ void StatWatcher::New(const FunctionCallbackInfo<Value>& args) {
   assert(args.IsConstructCall());
   HandleScope handle_scope(args.GetIsolate());
   Environment* env = Environment::GetCurrent(args.GetIsolate());
-  new StatWatcher(env, args.This());
+  StatWatcher::Allocate(env, args.This());
 }
 
 

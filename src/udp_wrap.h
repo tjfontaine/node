@@ -33,6 +33,9 @@ namespace node {
 
 class UDPWrap: public HandleWrap {
  public:
+  NODE_UMC_ALLOCATE_AW(UDPWrap);
+  NODE_UMC_DESTROYV(UDPWrap);
+
   static void Initialize(v8::Handle<v8::Object> target,
                          v8::Handle<v8::Value> unused,
                          v8::Handle<v8::Context> context);

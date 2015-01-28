@@ -307,7 +307,7 @@ void SecureContext::Initialize(Environment* env, Handle<Object> target) {
 void SecureContext::New(const FunctionCallbackInfo<Value>& args) {
   HandleScope handle_scope(args.GetIsolate());
   Environment* env = Environment::GetCurrent(args.GetIsolate());
-  new SecureContext(env, args.This());
+  SecureContext::Allocate(env, args.This());
 }
 
 
@@ -2187,7 +2187,7 @@ void Connection::New(const FunctionCallbackInfo<Value>& args) {
 
   SSLWrap<Connection>::Kind kind =
       is_server ? SSLWrap<Connection>::kServer : SSLWrap<Connection>::kClient;
-  Connection* conn = new Connection(env, args.This(), sc, kind);
+  Connection* conn = Connection::Allocate(env, args.This(), sc, kind);
   conn->bio_read_ = NodeBIO::New();
   conn->bio_write_ = NodeBIO::New();
 
@@ -2569,7 +2569,7 @@ void CipherBase::New(const FunctionCallbackInfo<Value>& args) {
   HandleScope handle_scope(args.GetIsolate());
   CipherKind kind = args[0]->IsTrue() ? kCipher : kDecipher;
   Environment* env = Environment::GetCurrent(args.GetIsolate());
-  new CipherBase(env, args.This(), kind);
+  CipherBase::Allocate(env, args.This(), kind);
 }
 
 
@@ -2944,7 +2944,7 @@ void Hmac::Initialize(Environment* env, v8::Handle<v8::Object> target) {
 void Hmac::New(const FunctionCallbackInfo<Value>& args) {
   HandleScope handle_scope(args.GetIsolate());
   Environment* env = Environment::GetCurrent(args.GetIsolate());
-  new Hmac(env, args.This());
+  Hmac::Allocate(env, args.This());
 }
 
 
@@ -3091,7 +3091,7 @@ void Hash::New(const FunctionCallbackInfo<Value>& args) {
 
   const node::Utf8Value hash_type(args[0]);
 
-  Hash* hash = new Hash(env, args.This());
+  Hash* hash = Hash::Allocate(env, args.This());
   if (!hash->HashInit(*hash_type)) {
     return env->ThrowError("Digest method not supported");
   }
@@ -3240,7 +3240,7 @@ void Sign::Initialize(Environment* env, v8::Handle<v8::Object> target) {
 void Sign::New(const FunctionCallbackInfo<Value>& args) {
   HandleScope handle_scope(args.GetIsolate());
   Environment* env = Environment::GetCurrent(args.GetIsolate());
-  new Sign(env, args.This());
+  Sign::Allocate(env, args.This());
 }
 
 
@@ -3422,7 +3422,7 @@ void Verify::Initialize(Environment* env, v8::Handle<v8::Object> target) {
 void Verify::New(const FunctionCallbackInfo<Value>& args) {
   HandleScope handle_scope(args.GetIsolate());
   Environment* env = Environment::GetCurrent(args.GetIsolate());
-  new Verify(env, args.This());
+  Verify::Allocate(env, args.This());
 }
 
 
@@ -3844,7 +3844,7 @@ void DiffieHellman::DiffieHellmanGroup(
   HandleScope scope(args.GetIsolate());
 
   Environment* env = Environment::GetCurrent(args.GetIsolate());
-  DiffieHellman* diffieHellman = new DiffieHellman(env, args.This());
+  DiffieHellman* diffieHellman = DiffieHellman::Allocate(env, args.This());
 
   if (args.Length() != 1 || !args[0]->IsString()) {
     return env->ThrowError("No group name given");
@@ -3877,7 +3877,7 @@ void DiffieHellman::New(const FunctionCallbackInfo<Value>& args) {
 
   Environment* env = Environment::GetCurrent(args.GetIsolate());
   DiffieHellman* diffieHellman =
-      new DiffieHellman(env, args.This());
+      DiffieHellman::Allocate(env, args.This());
   bool initialized = false;
 
   if (args.Length() == 2) {
@@ -4188,7 +4188,7 @@ void ECDH::New(const FunctionCallbackInfo<Value>& args) {
   if (key == NULL)
     return env->ThrowError("Failed to create EC_KEY using curve name");
 
-  new ECDH(env, args.This(), key);
+  ECDH::Allocate(env, args.This(), key);
 }
 
 
@@ -4373,6 +4373,29 @@ void ECDH::SetPublicKey(const FunctionCallbackInfo<Value>& args) {
 
 class PBKDF2Request : public AsyncWrap {
  public:
+  NODE_UMC_DESTROYV(PBKDF2Request);
+
+  static PBKDF2Request* Allocate(Environment* env,
+                                 Local<Object> object,
+                                 const EVP_MD* digest,
+                                 ssize_t passlen,
+                                 char* pass,
+                                 ssize_t saltlen,
+                                 char* salt,
+                                 ssize_t iter,
+                                 ssize_t keylen) {
+    NODE_UMC_DOALLOC(PBKDF2Request);
+    return new(storage) PBKDF2Request(env,
+                                      object,
+                                      digest,
+                                      passlen,
+                                      pass,
+                                      saltlen,
+                                      salt,
+                                      iter,
+                                      keylen);
+  }
+
   PBKDF2Request(Environment* env,
                 Local<Object> object,
                 const EVP_MD* digest,
@@ -4511,7 +4534,7 @@ void EIO_PBKDF2After(uv_work_t* work_req, int status) {
   EIO_PBKDF2After(req, argv);
   req->MakeCallback(env->ondone_string(), ARRAY_SIZE(argv), argv);
   req->release();
-  delete req;
+  req->Destroy();
 }
 
 
@@ -4598,7 +4621,7 @@ void PBKDF2(const FunctionCallbackInfo<Value>& args) {
   }
 
   obj = Object::New(env->isolate());
-  req = new PBKDF2Request(env,
+  req = PBKDF2Request::Allocate(env,
                           obj,
                           digest,
                           passlen,
@@ -4638,6 +4661,15 @@ void PBKDF2(const FunctionCallbackInfo<Value>& args) {
 // Only instantiate within a valid HandleScope.
 class RandomBytesRequest : public AsyncWrap {
  public:
+  NODE_UMC_DESTROYV(RandomBytesRequest);
+
+  static RandomBytesRequest* Allocate(Environment* env,
+                                      Local<Object> object,
+                                      size_t size) {
+    NODE_UMC_DOALLOC(RandomBytesRequest);
+    return new(storage) RandomBytesRequest(env, object, size);
+  }
+
   RandomBytesRequest(Environment* env, Local<Object> object, size_t size)
       : AsyncWrap(env, object, AsyncWrap::PROVIDER_CRYPTO),
         error_(0),
@@ -4749,7 +4781,7 @@ void RandomBytesAfter(uv_work_t* work_req, int status) {
   Local<Value> argv[2];
   RandomBytesCheck(req, argv);
   req->MakeCallback(env->ondone_string(), ARRAY_SIZE(argv), argv);
-  delete req;
+  req->Destroy();
 }
 
 
@@ -4770,7 +4802,7 @@ void RandomBytes(const FunctionCallbackInfo<Value>& args) {
   }
 
   Local<Object> obj = Object::New(env->isolate());
-  RandomBytesRequest* req = new RandomBytesRequest(env, obj, size);
+  RandomBytesRequest* req = RandomBytesRequest::Allocate(env, obj, size);
 
   if (args[1]->IsFunction()) {
     obj->Set(FIXED_ONE_BYTE_STRING(args.GetIsolate(), "ondone"), args[1]);
@@ -4786,7 +4818,7 @@ void RandomBytes(const FunctionCallbackInfo<Value>& args) {
     Local<Value> argv[2];
     RandomBytesWork<pseudoRandom>(req->work_req());
     RandomBytesCheck(req, argv);
-    delete req;
+    req->Destroy();
 
     if (!argv[0]->IsNull())
       env->isolate()->ThrowException(argv[0]);
@@ -4889,7 +4921,7 @@ void Certificate::Initialize(Environment* env, Handle<Object> target) {
 void Certificate::New(const FunctionCallbackInfo<Value>& args) {
   HandleScope handle_scope(args.GetIsolate());
   Environment* env = Environment::GetCurrent(args.GetIsolate());
-  new Certificate(env, args.This());
+  Certificate::Allocate(env, args.This());
 }
 
 
